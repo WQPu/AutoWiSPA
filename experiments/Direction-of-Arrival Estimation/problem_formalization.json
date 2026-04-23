@@ -1,0 +1,452 @@
+{
+  "scenario_spec": {
+    "signal_type": "narrowband far-field two-source ULA DoA estimation with subspace pseudo-spectrum localization",
+    "core_parameters": {
+      "array_type": "ULA",
+      "num_rx": 8,
+      "inter_element_spacing_lambda": 0.5,
+      "num_sources": 2,
+      "num_sources_known": true,
+      "num_snapshots": 200,
+      "source_angles_deg_default": [
+        -7.5,
+        7.5
+      ],
+      "source_separation_deg": 15,
+      "noise_model": "spatially white circular complex Gaussian",
+      "source_model": "uncorrelated narrowband complex Gaussian",
+      "pseudospectrum_scan_range_deg": [
+        -90,
+        90
+      ],
+      "pseudospectrum_grid_step_deg": 0.1,
+      "snr_definition": "per_sensor_input_snr",
+      "snr_step_db": 2,
+      "rmse_monte_carlo_trials": 1000,
+      "resolution_success_rule": "exactly two dominant peaks, each within +/-2 deg of its nearest true DoA",
+      "resolution_probability_target": 0.9,
+      "threshold_gap_rule": "threshold region flagged when RMSE exceeds 3x stochastic CRB"
+    },
+    "snr_range_db": [
+      0,
+      30
+    ],
+    "test_scenarios": [
+      {
+        "name": "nominal_snr_sweep",
+        "description": "Evaluate RMSE, pseudo-spectrum behavior, and CRB ratio over SNR 0:2:30 dB with fixed M=8, L=200, and true angles [-7.5, 7.5] deg.",
+        "overrides": {}
+      },
+      {
+        "name": "resolution_probability_curve",
+        "description": "Estimate probability of resolution versus SNR using the provided two-peak +/-2 deg success rule and extract minimum SNR achieving probability >= 0.9.",
+        "overrides": {}
+      },
+      {
+        "name": "single_snr_pseudospectrum_diagnostics",
+        "description": "At nominal SNR 20 dB, generate trial-level pseudo-spectrum and peak separation statistics for localization sanity checks.",
+        "overrides": {
+          "snr_db": 20
+        }
+      }
+    ],
+    "data_contract": {
+      "inputs": [
+        "M=8, d_over_lambda=0.5, D=2, L=200",
+        "theta_true_deg (default [-7.5, 7.5])",
+        "snr_db_grid = [0,2,...,30]",
+        "num_trials=1000",
+        "scan_grid_deg = [-90,-89.9,...,90]",
+        "random_seed (optional reproducibility control)"
+      ],
+      "expected_outputs": [
+        "theta_hat_deg[snr_index, trial, D] for each estimator",
+        "music_pseudospectrum[snr_index, trial_or_avg, grid_index]",
+        "rmse_deg_per_snr for MUSIC and baselines",
+        "stochastic_crb_deg_per_snr",
+        "rmse_to_crb_ratio_per_snr",
+        "resolution_probability_per_snr",
+        "resolution_threshold_snr_db",
+        "runtime_per_trial_ms_per_estimator",
+        "threshold_region_mask_per_snr (RMSE > 3x CRB)"
+      ]
+    },
+    "generation_notes": "Use wavelength-normalized steering vectors, enforce per-sensor SNR scaling, and reuse the same trial realizations across estimators for fair comparison."
+  },
+  "system_model_doc": "The snapshot model is \\(\\mathbf{x}[\\ell]=\\mathbf{A}(\\boldsymbol{\\theta})\\mathbf{s}[\\ell]+\\mathbf{n}[\\ell]\\in\\mathbb{C}^{M}\\), \\(\\ell=1,\\dots,L\\), with \\(M=8\\), \\(D=2\\), ULA spacing \\(d=\\lambda/2\\), and steering vector \\(\\mathbf{a}(\\theta)=[1,e^{-j\\pi\\sin\\theta},\\dots,e^{-j\\pi(M-1)\\sin\\theta}]^T\\); sources are mutually uncorrelated and noise is spatially white \\(\\mathcal{CN}(\\mathbf{0},\\sigma_n^2\\mathbf{I})\\), so \\(\\mathbf{R}_x=\\mathbf{A}\\mathbf{R}_s\\mathbf{A}^H+\\sigma_n^2\\mathbf{I}\\) has rank-\\(D\\) signal subspace and orthogonal noise subspace exploited by MUSIC, with ULA shift-invariance also enabling Root-MUSIC and ESPRIT baselines.",
+  "math_formulation": {
+    "problem_type": "parametric subspace DoA estimation with spectral peak localization and threshold characterization",
+    "objective": {
+      "type": "estimate",
+      "description": "Estimate the ordered DoA vector and pseudo-spectrum from finite snapshots, then evaluate RMSE and resolution probability versus SNR against stochastic CRB.",
+      "formula_latex": "\\hat{\\boldsymbol{\\theta}}(\\mathrm{SNR})=\\operatorname*{arg\\,topD}_{\\theta\\in\\Theta_g} P_{\\mathrm{MU}}(\\theta),\\quad \\mathrm{RMSE}(\\mathrm{SNR})=\\sqrt{\\frac{1}{DT}\\sum_{t=1}^{T}\\|\\hat{\\boldsymbol{\\theta}}_t-\\boldsymbol{\\theta}_0\\|_2^2}"
+    },
+    "variables": [
+      {
+        "symbol": "M",
+        "name": "number of sensors",
+        "domain": "\\mathbb{N}",
+        "description": "ULA element count with fixed value 8."
+      },
+      {
+        "symbol": "L",
+        "name": "number of snapshots",
+        "domain": "\\mathbb{N}",
+        "description": "Temporal snapshots per trial with fixed value 200."
+      },
+      {
+        "symbol": "D",
+        "name": "number of sources",
+        "domain": "\\mathbb{N}",
+        "description": "Known model order with fixed value 2."
+      },
+      {
+        "symbol": "\\boldsymbol{\\theta}=[\\theta_1,\\theta_2]^T",
+        "name": "true DoAs",
+        "domain": "[-\\pi/2,\\pi/2]^2",
+        "description": "Unknown source directions in radians."
+      },
+      {
+        "symbol": "\\mathbf{A}(\\boldsymbol{\\theta})",
+        "name": "array manifold",
+        "domain": "\\mathbb{C}^{M\\times D}",
+        "description": "Vandermonde steering matrix of the ULA."
+      },
+      {
+        "symbol": "\\mathbf{R}_x,\\hat{\\mathbf{R}}_x",
+        "name": "true and sample covariance",
+        "domain": "\\mathbb{C}^{M\\times M}",
+        "description": "Population and finite-sample spatial covariance matrices."
+      },
+      {
+        "symbol": "\\mathbf{U}_n",
+        "name": "noise subspace basis",
+        "domain": "\\mathbb{C}^{M\\times(M-D)}",
+        "description": "Eigenvectors associated with the smallest \\(M-D\\) eigenvalues."
+      },
+      {
+        "symbol": "P_{\\mathrm{MU}}(\\theta)",
+        "name": "MUSIC pseudo-spectrum",
+        "domain": "\\mathbb{R}_+",
+        "description": "Reciprocal projection energy on the estimated noise subspace."
+      },
+      {
+        "symbol": "\\mathrm{SNR}",
+        "name": "per-sensor input SNR",
+        "domain": "\\mathbb{R}_+",
+        "description": "Signal-to-noise ratio used in sweep 0 to 30 dB."
+      }
+    ],
+    "constraints": [
+      {
+        "formula_latex": "\\mathbf{x}[\\ell]=\\mathbf{A}(\\boldsymbol{\\theta})\\mathbf{s}[\\ell]+\\mathbf{n}[\\ell],\\ \\ell=1,\\dots,L",
+        "description": "Narrowband far-field linear array model.",
+        "type": "equality"
+      },
+      {
+        "formula_latex": "\\mathbb{E}[\\mathbf{s}[\\ell]\\mathbf{s}[\\ell]^H]=\\mathbf{R}_s\\ \\text{diagonal},\\ \\mathbb{E}[\\mathbf{n}[\\ell]\\mathbf{n}[\\ell]^H]=\\sigma_n^2\\mathbf{I}_M",
+        "description": "Sources are mutually uncorrelated and noise is spatially white.",
+        "type": "structural"
+      },
+      {
+        "formula_latex": "\\mathbf{a}(\\theta)^H\\mathbf{U}_n\\mathbf{U}_n^H\\mathbf{a}(\\theta)\\neq 0\\ \\forall\\theta\\notin\\{\\theta_1,\\theta_2\\}",
+        "description": "Noise-subspace orthogonality creates pseudo-spectrum peaks at true DoAs.",
+        "type": "structural"
+      },
+      {
+        "formula_latex": "\\Pr(\\mathcal{R}(\\mathrm{SNR}))\\ge 0.9\\ \\Rightarrow\\ \\mathrm{SNR}\\ge \\mathrm{SNR}_{\\mathrm{th}}",
+        "description": "Resolution threshold is the minimum SNR meeting target resolution probability.",
+        "type": "inequality"
+      }
+    ],
+    "key_formulas": [
+      {
+        "name": "ULA steering vector",
+        "formula_latex": "\\mathbf{a}(\\theta)=\\left[e^{-j\\pi m\\sin\\theta}\\right]_{m=0}^{M-1}",
+        "description": "Half-wavelength ULA manifold vector."
+      },
+      {
+        "name": "Sample covariance",
+        "formula_latex": "\\hat{\\mathbf{R}}_x=\\frac{1}{L}\\sum_{\\ell=1}^{L}\\mathbf{x}[\\ell]\\mathbf{x}[\\ell]^H",
+        "description": "Finite-snapshot covariance estimate."
+      },
+      {
+        "name": "MUSIC pseudo-spectrum",
+        "formula_latex": "P_{\\mathrm{MU}}(\\theta)=\\frac{1}{\\mathbf{a}(\\theta)^H\\mathbf{U}_n\\mathbf{U}_n^H\\mathbf{a}(\\theta)}",
+        "description": "Spectral localization criterion."
+      },
+      {
+        "name": "Stochastic CRB",
+        "formula_latex": "\\mathrm{CRB}(\\boldsymbol{\\theta})=\\mathbf{J}^{-1},\\quad [\\mathbf{J}]_{ij}=2L\\,\\Re\\!\\left\\{\\operatorname{tr}\\!\\left(\\mathbf{R}_x^{-1}\\frac{\\partial \\mathbf{R}_x}{\\partial \\theta_i}\\mathbf{R}_x^{-1}\\frac{\\partial \\mathbf{R}_x}{\\partial \\theta_j}\\right)\\right\\}",
+        "description": "Fisher-information-based stochastic bound for covariance-parameterized DoA."
+      },
+      {
+        "name": "Resolution probability",
+        "formula_latex": "P_{\\mathrm{res}}(\\mathrm{SNR})=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbf{1}\\{\\mathcal{R}_t\\}",
+        "description": "Monte Carlo success rate under the provided two-peak rule."
+      }
+    ],
+    "assumptions": [
+      "Sources are narrowband, far-field, and temporally i.i.d. across snapshots.",
+      "Source count D=2 is known for all subspace methods.",
+      "Array calibration is ideal with no mutual coupling or position errors.",
+      "SNR is consistently defined per sensor input for simulation and bounds."
+    ],
+    "model_properties": {
+      "convexity": "Non-convex in DoA parameters with grid-based spectral search for MUSIC and polynomial rooting for Root-MUSIC.",
+      "closed_form": false,
+      "iterative_required": false,
+      "special_structure": "Vandermonde ULA manifold, rank-2 signal subspace, noise-subspace orthogonality, shift-invariance (ESPRIT), and approximately Toeplitz covariance."
+    },
+    "formulation_markdown": "Given \\(\\hat{\\mathbf{R}}_x\\) from \\(L=200\\) snapshots of an \\(M=8\\) half-wavelength ULA, estimate \\(\\boldsymbol{\\theta}\\in[-\\pi/2,\\pi/2]^2\\) by exploiting the rank-\\(D\\) eigenspace split \\(\\hat{\\mathbf{R}}_x=\\mathbf{U}_s\\boldsymbol{\\Lambda}_s\\mathbf{U}_s^H+\\mathbf{U}_n\\boldsymbol{\\Lambda}_n\\mathbf{U}_n^H\\) and the orthogonality \\(\\mathbf{a}(\\theta_i)^H\\mathbf{U}_n\\approx 0\\), then localize peaks of \\(P_{\\mathrm{MU}}(\\theta)\\) on the scan grid to obtain \\(\\hat{\\boldsymbol{\\theta}}\\); evaluate \\(\\mathrm{RMSE}(\\mathrm{SNR})\\), \\(P_{\\mathrm{res}}(\\mathrm{SNR})\\), and \\(\\mathrm{RMSE}/\\mathrm{CRB}\\) over 0:2:30 dB and define the resolution threshold as the minimum SNR where \\(P_{\\mathrm{res}}\\ge 0.9\\)."
+  },
+  "formalization_summary": {
+    "design_implications": [
+      "Vandermonde ULA and rank-2 covariance justify subspace estimators as primary low-complexity choices.",
+      "Noise-subspace orthogonality directly enables MUSIC/Root-MUSIC peak localization and resolution analysis.",
+      "Shift-invariance structure motivates ESPRIT as a gridless cross-check baseline.",
+      "Approximate Toeplitz covariance can be used for optional covariance denoising sensitivity tests."
+    ],
+    "evaluation_focus": [
+      "Primary curve is DoA RMSE versus SNR with identical Monte Carlo trials across estimators.",
+      "Stochastic CRB is the mandatory benchmark overlay for RMSE-to-bound ratio and threshold-gap marking.",
+      "Resolution threshold is reported as minimum SNR where empirical resolution probability reaches 0.9.",
+      "Low-SNR breakdown interpretation may be WWB-informed while CRB remains the required reference."
+    ],
+    "implementation_risks": [
+      "Finite-snapshot subspace leakage can cause missed or merged pseudo-spectrum peaks near threshold SNR.",
+      "Peak-picking heuristics and edge effects can bias resolution probability unless robust local-max filtering is used.",
+      "Inconsistent SNR scaling between simulation and CRB computation can invalidate bound comparisons.",
+      "ML baselines may be runtime-heavy and sensitive to initialization or grid density in notebook settings."
+    ]
+  },
+  "algorithm_design": {
+    "proposed_algorithm": {
+      "name": "Grid-MUSIC with Monte Carlo SNR sweep and CRB overlay",
+      "type": "subspace",
+      "summary": "Compute sample-covariance eigenspaces per trial, evaluate MUSIC pseudo-spectrum on a fixed angle grid, pick two dominant peaks, and aggregate RMSE/resolution statistics versus SNR."
+    },
+    "algorithm_steps": [
+      {
+        "step": 1,
+        "name": "Build angle grid and true manifold",
+        "description": "Create scan grid and true steering matrix used for data generation and spectral evaluation.",
+        "formula_latex": "\\Theta_g=\\{\\theta_g^{(k)}\\}_{k=1}^{G},\\ \\theta_g^{(k)}=\\left(\\theta_{\\min}+ (k-1)\\Delta\\theta\\right)\\frac{\\pi}{180},\\ \\mathbf{A}_0=[\\mathbf{a}(\\theta_{0,1}),\\mathbf{a}(\\theta_{0,2})],\\ a_m(\\theta)=e^{-j\\pi m\\sin\\theta},\\ m=0,\\dots,M-1",
+        "inputs": [
+          "theta_min_deg",
+          "theta_max_deg",
+          "grid_step_deg",
+          "theta_true_deg",
+          "M"
+        ],
+        "outputs": [
+          "Theta_g",
+          "A0"
+        ],
+        "numpy_hint": "Use np.arange for grid and np.exp with broadcasting over sensor index m and angle arrays."
+      },
+      {
+        "step": 2,
+        "name": "Loop over SNR and trials with power scaling",
+        "description": "For each SNR point and Monte Carlo trial, set source/noise variances to match per-sensor input SNR.",
+        "formula_latex": "\\forall q\\in\\{1,\\dots,Q\\},\\ \\forall t\\in\\{1,\\dots,T\\}:\\ \\gamma_q=10^{\\mathrm{SNR}_{\\mathrm{dB}}[q]/10},\\ \\sigma_s^2=1,\\ \\sigma_n^2=\\frac{D\\sigma_s^2}{\\gamma_q}",
+        "inputs": [
+          "snr_db_grid",
+          "T",
+          "D"
+        ],
+        "outputs": [
+          "gamma_q",
+          "sigma_n2"
+        ],
+        "numpy_hint": "Convert dB via 10**(snr_db/10.0) and keep loops over q,t for reproducible Monte Carlo."
+      },
+      {
+        "step": 3,
+        "name": "Generate random source and noise snapshots",
+        "description": "Draw complex Gaussian source and noise matrices with required covariance.",
+        "formula_latex": "\\mathbf{S}\\in\\mathbb{C}^{D\\times L},\\ S_{d,\\ell}\\sim\\mathcal{CN}(0,\\sigma_s^2),\\ \\mathbf{N}\\in\\mathbb{C}^{M\\times L},\\ N_{m,\\ell}\\sim\\mathcal{CN}(0,\\sigma_n^2)",
+        "inputs": [
+          "D",
+          "M",
+          "L",
+          "sigma_s2",
+          "sigma_n2"
+        ],
+        "outputs": [
+          "S",
+          "N"
+        ],
+        "numpy_hint": "Use (rng.standard_normal + 1j*rng.standard_normal)/np.sqrt(2) scaled by sqrt(variance)."
+      },
+      {
+        "step": 4,
+        "name": "Synthesize received snapshots",
+        "description": "Form observation matrix from steering, sources, and noise.",
+        "formula_latex": "\\mathbf{X}=\\mathbf{A}_0\\mathbf{S}+\\mathbf{N},\\quad \\mathbf{X}\\in\\mathbb{C}^{M\\times L}",
+        "inputs": [
+          "A0",
+          "S",
+          "N"
+        ],
+        "outputs": [
+          "X"
+        ],
+        "numpy_hint": "Matrix multiply with @ operator."
+      },
+      {
+        "step": 5,
+        "name": "Estimate sample covariance",
+        "description": "Compute Hermitian covariance for subspace decomposition.",
+        "formula_latex": "\\hat{\\mathbf{R}}_x=\\frac{1}{L}\\mathbf{X}\\mathbf{X}^H,\\quad \\hat{\\mathbf{R}}_x\\in\\mathbb{C}^{M\\times M}",
+        "inputs": [
+          "X",
+          "L"
+        ],
+        "outputs": [
+          "Rhat"
+        ],
+        "numpy_hint": "Use Rhat = (X @ X.conj().T) / L."
+      },
+      {
+        "step": 6,
+        "name": "Eigen-decompose and sort subspaces",
+        "description": "Extract ordered eigenpairs and isolate noise subspace dimension M-D.",
+        "formula_latex": "\\hat{\\mathbf{R}}_x\\mathbf{u}_i=\\lambda_i\\mathbf{u}_i,\\ \\lambda_1\\ge\\cdots\\ge\\lambda_M,\\ \\mathbf{U}_n=[\\mathbf{u}_{D+1},\\dots,\\mathbf{u}_M]\\in\\mathbb{C}^{M\\times(M-D)}",
+        "inputs": [
+          "Rhat",
+          "D"
+        ],
+        "outputs": [
+          "eigvals",
+          "Un"
+        ],
+        "numpy_hint": "Use np.linalg.eigh then reverse order with np.argsort(eigvals)[::-1]."
+      },
+      {
+        "step": 7,
+        "name": "Evaluate MUSIC pseudo-spectrum on grid",
+        "description": "Compute reciprocal noise-subspace projection energy for each scan angle.",
+        "formula_latex": "\\forall k=1,\\dots,G:\\ \\mathbf{a}_k=\\mathbf{a}(\\theta_g^{(k)}),\\ d_k=\\mathbf{a}_k^H\\mathbf{U}_n\\mathbf{U}_n^H\\mathbf{a}_k,\\ P_k=\\frac{1}{\\Re\\{d_k\\}}",
+        "inputs": [
+          "Un",
+          "Theta_g",
+          "M"
+        ],
+        "outputs": [
+          "P_music"
+        ],
+        "numpy_hint": "Precompute steering matrix Agrid (M x G); use proj = np.sum(np.conj(Agrid)*(Un@Un.conj().T@Agrid), axis=0)."
+      },
+      {
+        "step": 8,
+        "name": "Peak picking and DoA estimation",
+        "description": "Find local maxima and select the two strongest distinct peaks as DoA estimates.",
+        "formula_latex": "\\mathcal{K}_{\\mathrm{pk}}=\\{k\\in\\{2,\\dots,G-1\\}: P_{k}>P_{k-1}\\land P_k\\ge P_{k+1}\\},\\ \\hat{k}_{1:2}=\\operatorname*{arg\\,top2}_{k\\in\\mathcal{K}_{\\mathrm{pk}}} P_k,\\ \\hat{\\theta}_{1:2}=\\operatorname{sort}(\\theta_g^{(\\hat{k}_{1:2})})",
+        "inputs": [
+          "P_music",
+          "Theta_g"
+        ],
+        "outputs": [
+          "theta_hat_rad",
+          "peak_indices"
+        ],
+        "numpy_hint": "Use scipy.signal.find_peaks or boolean local-max test plus np.argpartition."
+      },
+      {
+        "step": 9,
+        "name": "Per-trial error and resolution indicator",
+        "description": "Compute ordered estimation error and success flag under the given peak rule.",
+        "formula_latex": "\\mathbf{e}_t=\\hat{\\boldsymbol{\\theta}}_t-\\boldsymbol{\\theta}_0,\\ \\mathcal{R}_t=\\mathbf{1}\\{\\text{two dominant peaks exist and }\\min_{j\\in\\{1,2\\}}|\\hat{\\theta}_{t,i}-\\theta_{0,j}|\\le 2\\pi/180\\ \\forall i\\}",
+        "inputs": [
+          "theta_hat_rad",
+          "theta_true_rad",
+          "peak_indices"
+        ],
+        "outputs": [
+          "e_t",
+          "res_success_t"
+        ],
+        "numpy_hint": "Sort estimated/true angles and compute nearest-distance checks in radians."
+      },
+      {
+        "step": 10,
+        "name": "Aggregate metrics across trials and SNR",
+        "description": "Compute RMSE, resolution probability, threshold mask, and minimum SNR meeting target probability.",
+        "formula_latex": "\\mathrm{RMSE}_q=\\sqrt{\\frac{1}{DT}\\sum_{t=1}^{T}\\|\\mathbf{e}_{q,t}\\|_2^2}\\cdot\\frac{180}{\\pi},\\ \\hat{P}_{\\mathrm{res},q}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathcal{R}_{q,t},\\ \\mathrm{mask}_q=\\mathbf{1}\\{\\mathrm{RMSE}_q>3\\sqrt{\\tfrac{1}{D}\\operatorname{tr}(\\mathrm{CRB}_q)}\\cdot\\tfrac{180}{\\pi}\\},\\ \\mathrm{SNR}_{\\mathrm{th}}=\\min\\{\\mathrm{SNR}_{\\mathrm{dB}}[q]:\\hat{P}_{\\mathrm{res},q}\\ge 0.9\\}",
+        "inputs": [
+          "errors_all",
+          "res_success_all",
+          "CRB_all",
+          "snr_db_grid"
+        ],
+        "outputs": [
+          "rmse_deg",
+          "pres",
+          "threshold_mask",
+          "resolution_threshold_snr_db"
+        ],
+        "numpy_hint": "Use np.mean, np.sqrt, and np.where for first-index threshold extraction."
+      },
+      {
+        "step": 11,
+        "name": "Compute stochastic CRB curve",
+        "description": "For each SNR, evaluate Fisher information and bound for the two-angle parameter vector.",
+        "formula_latex": "\\mathbf{R}_x(\\boldsymbol{\\theta})=\\mathbf{A}_0\\mathbf{R}_s\\mathbf{A}_0^H+\\sigma_n^2\\mathbf{I},\\ \\left[\\mathbf{J}_q\\right]_{ij}=2L\\Re\\left\\{\\operatorname{tr}\\left(\\mathbf{R}_x^{-1}\\frac{\\partial\\mathbf{R}_x}{\\partial\\theta_i}\\mathbf{R}_x^{-1}\\frac{\\partial\\mathbf{R}_x}{\\partial\\theta_j}\\right)\\right\\},\\ \\mathrm{CRB}_q=\\mathbf{J}_q^{-1}",
+        "inputs": [
+          "A0",
+          "Rs",
+          "sigma_n2",
+          "L",
+          "theta_true_rad"
+        ],
+        "outputs": [
+          "CRB_all",
+          "crb_rmse_deg"
+        ],
+        "numpy_hint": "Use analytical dA/dtheta for ULA, then np.linalg.inv and trace products for 2x2 FIM."
+      }
+    ],
+    "baseline_algorithms": [
+      {
+        "name": "Root-MUSIC",
+        "summary": "Uses ULA polynomial rooting from the noise projector to avoid dense angular scanning.",
+        "key_formula_latex": "Q(z)=\\sum_{p=-(M-1)}^{M-1} c_p z^{-p},\\ c_p=\\sum_{m-n=p}[\\mathbf{U}_n\\mathbf{U}_n^H]_{m,n},\\ \\hat{z}_i=\\arg\\min_{|z|\\approx1}|Q(z)|,\\ \\hat{\\theta}_i=\\arcsin\\!\\left(-\\frac{\\arg(\\hat{z}_i)}{\\pi}\\right)",
+        "numpy_hint": "Form polynomial coefficients from projector diagonals and use np.roots; select roots nearest unit circle."
+      },
+      {
+        "name": "ESPRIT",
+        "summary": "Exploits ULA shift-invariance of the signal subspace to estimate phase shifts and DoAs.",
+        "key_formula_latex": "\\mathbf{J}_1=[\\mathbf{I}_{M-1}\\ \\mathbf{0}]\\!,\\ \\mathbf{J}_2=[\\mathbf{0}\\ \\mathbf{I}_{M-1}]\\!,\\ \\mathbf{\\Psi}=(\\mathbf{J}_1\\mathbf{U}_s)^{\\dagger}(\\mathbf{J}_2\\mathbf{U}_s),\\ \\hat{\\theta}_i=\\arcsin\\!\\left(-\\frac{\\arg(\\lambda_i(\\mathbf{\\Psi}))}{\\pi}\\right)",
+        "numpy_hint": "Use np.linalg.pinv and np.linalg.eig on small DxD matrix."
+      },
+      {
+        "name": "Deterministic Maximum Likelihood",
+        "summary": "Searches DoAs that minimize projection residual energy of snapshots.",
+        "key_formula_latex": "\\hat{\\boldsymbol{\\theta}}_{\\mathrm{DML}}=\\arg\\min_{\\boldsymbol{\\theta}}\\operatorname{tr}\\!\\left(\\mathbf{P}_{\\mathbf{A}(\\boldsymbol{\\theta})}^{\\perp}\\hat{\\mathbf{R}}_x\\right),\\ \\mathbf{P}_{\\mathbf{A}}^{\\perp}=\\mathbf{I}-\\mathbf{A}(\\mathbf{A}^H\\mathbf{A})^{-1}\\mathbf{A}^H",
+        "numpy_hint": "Use 2D grid search for two angles with batched matrix operations."
+      },
+      {
+        "name": "Stochastic Maximum Likelihood",
+        "summary": "Fits covariance parameters by Gaussian log-likelihood minimization over DoAs.",
+        "key_formula_latex": "\\hat{\\boldsymbol{\\theta}}_{\\mathrm{SML}}=\\arg\\min_{\\boldsymbol{\\theta},\\mathbf{R}_s,\\sigma_n^2}\\left[\\log\\det\\mathbf{R}_x(\\boldsymbol{\\theta})+\\operatorname{tr}(\\mathbf{R}_x(\\boldsymbol{\\theta})^{-1}\\hat{\\mathbf{R}}_x)\\right]",
+        "numpy_hint": "Implement alternating updates or nested grid for angles with closed-form nuisance updates where possible."
+      },
+      {
+        "name": "Stochastic CRB for two-source ULA DoA estimation",
+        "summary": "Analytical lower bound used as mandatory benchmark curve across SNR.",
+        "key_formula_latex": "\\mathrm{CRB}(\\boldsymbol{\\theta})=\\mathbf{J}^{-1},\\ [\\mathbf{J}]_{ij}=2L\\Re\\left\\{\\operatorname{tr}\\left(\\mathbf{R}_x^{-1}\\frac{\\partial\\mathbf{R}_x}{\\partial\\theta_i}\\mathbf{R}_x^{-1}\\frac{\\partial\\mathbf{R}_x}{\\partial\\theta_j}\\right)\\right\\}",
+        "numpy_hint": "analytical formula — compute and plot as reference"
+      }
+    ],
+    "convergence": {
+      "criterion": "",
+      "typical_iterations": null,
+      "formula_latex": ""
+    },
+    "complexity": {
+      "per_iteration": "Per trial per SNR: O(M^3 + G M (M-D)) for eigendecomposition plus MUSIC scan; total O(Q T (M^3 + G M (M-D))).",
+      "dominant_operation": "Hermitian eigendecomposition of the MxM sample covariance and dense pseudo-spectrum evaluation over G grid points."
+    }
+  }
+}

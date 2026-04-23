@@ -1,0 +1,518 @@
+{
+  "architecture": {
+    "name": "CombPilot64_CFR_Estimation_Suite",
+    "strategy_label": "LS-Interpolation + DFT-Denoising + Pilot-Domain LMMSE Wiener",
+    "summary": "Estimate full 64-tone CFR from 16 comb pilots (spacing 4) using three classical estimators with increasing complexity: LS+linear/spline interpolation, DFT delay-domain truncation after LS interpolation, and covariance-aided LMMSE Wiener reconstruction.",
+    "rationale": "The channel is frequency-correlated (small RMS delay spread) and delay-compressible under CP. Hence interpolation is a low-complexity baseline, DFT truncation adds model-based denoising, and LMMSE exploits second-order statistics for best NMSE at higher compute cost while keeping inversion in pilot domain (16x16).",
+    "algorithm_structure": "Single Monte-Carlo sweep framework: generate TDL-A channels and pilot observations per SNR; compute all estimators on each trial; accumulate NMSE on non-pilot tones, confidence bands, runtime, and complexity proxies; plot trade-offs.",
+    "pseudocode": "1) Define OFDM and pilot indices: N=64, P={0,4,...,60}, D=all\\P. Build SNR grid 0:2:30.\n2) For each SNR point and trial, generate delay-domain taps \\(h[\\ell]\\sim\\mathcal{CN}(0,p_\\ell)\\), then CFR \\(H[k]=\\sum_{\\ell=0}^{L_h-1} h[\\ell]e^{-j2\\pi k\\ell/N}\\).\n3) Form pilot observations via \\(\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p\\), with \\(|X_p|=1\\), \\(\\mathbf{n}_p\\sim\\mathcal{CN}(0,\\sigma_n^2\\mathbf{I})\\).\n4) Compute LS pilot estimate \\(\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}=\\mathbf{X}_p^{-1}\\mathbf{y}_p\\).\n5) Baseline A (linear): reconstruct full band by piecewise interpolation \\(\\hat H_{\\mathrm{lin}}[k]=\\mathcal{I}_{\\mathrm{lin}}\\{(k_{p,m},\\hat H_p^{LS}[m])\\}(k)\\).\n6) Baseline B (spline): reconstruct by cubic basis \\(\\hat H_{\\mathrm{spline}}[k]=\\sum_m \\hat H_p^{LS}[m]\\,\\beta_3((k-k_{p,m})/\\Delta k)\\).\n7) Method C (DFT-truncated): \\(\\tilde h[n]=\\frac{1}{N}\\sum_{k=0}^{N-1}\\hat H_{\\mathrm{lin}}[k]e^{j2\\pi kn/N}\\), truncate \\(\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t}\\), then \\(\\hat H_{\\mathrm{DFT}}[k]=\\sum_{n=0}^{N-1}\\hat h_T[n]e^{-j2\\pi kn/N}\\).\n8) Method D (LMMSE Wiener): build covariance \\([\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell}p_\\ell e^{-j2\\pi(m-n)\\ell/N}\\), then \\(\\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{LS}\\).\n9) Compute non-pilot NMSE per method: \\(\\mathrm{NMSE}=\\frac{\\|\\hat{\\mathbf{H}}_D-\\mathbf{H}_D\\|_2^2}{\\|\\mathbf{H}_D\\|_2^2}\\), then \\(\\mathrm{NMSE}_{dB}=10\\log_{10}(\\frac{1}{T}\\sum_t\\mathrm{NMSE}_t)\\).\n10) Store mean, std, 95% CI \\(\\bar x\\pm1.96\\,s/\\sqrt{T}\\), runtime, and complexity proxies; plot curves and sensitivity studies.",
+    "estimated_complexity": "Per OFDM symbol: LS+linear O(N), LS+spline O(N), DFT-trunc O(N log N), LMMSE O(N_p^3 + N N_p) with N_p=16 (pilot-domain inversion only).",
+    "confidence": 0.9,
+    "potential_weakness": "LMMSE depends on covariance/PDP accuracy; DFT truncation is sensitive to assumed tap length L_t; spline can overshoot near edges."
+  },
+  "algorithm_spec": {
+    "objective": "Recover full-band CFR \\(\\hat{\\mathbf{H}}\\in\\mathbb{C}^{64}\\) from noisy comb pilots and minimize non-pilot NMSE across SNR sweep while reporting runtime/complexity trade-offs.",
+    "inputs": [
+      {
+        "name": "snr_db_grid",
+        "shape": "[16]",
+        "dtype": "float",
+        "description": "SNR points from 0 to 30 dB with 2 dB step."
+      },
+      {
+        "name": "num_trials",
+        "shape": "scalar",
+        "dtype": "int",
+        "description": "Monte-Carlo trials per SNR (500)."
+      },
+      {
+        "name": "ofdm_params",
+        "shape": "dict",
+        "dtype": "object",
+        "description": "Contains N=64, Np=16, pilot_spacing=4, CP=16, pilot indices, data indices."
+      },
+      {
+        "name": "tdl_pdp",
+        "shape": "[L_h]",
+        "dtype": "float",
+        "description": "Normalized TDL-A tap powers used for channel generation and covariance construction."
+      },
+      {
+        "name": "assumed_trunc_len",
+        "shape": "scalar",
+        "dtype": "int",
+        "description": "Delay-domain truncation length L_t for DFT-based method."
+      }
+    ],
+    "outputs": [
+      {
+        "name": "nmse_db_curves",
+        "shape": "[num_methods, num_snr]",
+        "dtype": "float",
+        "description": "Mean NMSE in dB on non-pilot tones for each method."
+      },
+      {
+        "name": "nmse_ci95_db",
+        "shape": "[num_methods, num_snr, 2]",
+        "dtype": "float",
+        "description": "Lower/upper 95% CI of NMSE_dB or CI band from linear-scale NMSE."
+      },
+      {
+        "name": "runtime_ms_per_symbol",
+        "shape": "[num_methods, num_snr]",
+        "dtype": "float",
+        "description": "Average runtime per OFDM symbol estimate."
+      },
+      {
+        "name": "complexity_flops_proxy",
+        "shape": "[num_methods]",
+        "dtype": "float",
+        "description": "Analytical FLOP proxy by method."
+      },
+      {
+        "name": "example_reconstructions",
+        "shape": "dict",
+        "dtype": "object",
+        "description": "Sample true/estimated CFR and delay profiles for visualization."
+      }
+    ],
+    "pipeline": [
+      {
+        "step": 1,
+        "name": "Pilot-data observation model",
+        "purpose": "Construct noisy pilot observations from true CFR.",
+        "formula_latex": "\\mathbf{y}_p = \\mathbf{X}_p\\mathbf{h}_p + \\mathbf{n}_p,\\quad \\mathbf{n}_p\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_n^2\\mathbf{I})",
+        "implementation_hint": "Use complex Gaussian noise via np.random.randn + 1j*np.random.randn scaled by noise variance."
+      },
+      {
+        "step": 2,
+        "name": "LS estimation on pilot tones",
+        "purpose": "Obtain unbiased pilot-domain channel estimate.",
+        "formula_latex": "\\hat{\\mathbf{h}}_p^{\\mathrm{LS}} = \\mathbf{X}_p^{-1}\\mathbf{y}_p\\;\\;(=\\mathbf{y}_p\\text{ for unit pilots})",
+        "implementation_hint": "Elementwise divide y_p / x_p using NumPy broadcasting."
+      },
+      {
+        "step": 3,
+        "name": "LS linear interpolation (low-complexity baseline)",
+        "purpose": "Reconstruct full CFR using piecewise linear interpolation from pilot LS values.",
+        "formula_latex": "\\hat H_{\\mathrm{lin}}[k] = \\mathcal{I}_{\\mathrm{lin}}\\left\\{(k_{p,m},\\hat H_p^{\\mathrm{LS}}[m])\\right\\}(k),\\;k=0,\\dots,N-1",
+        "implementation_hint": "Use np.interp on real/imag parts separately, then recombine."
+      },
+      {
+        "step": 4,
+        "name": "LS spline interpolation baseline",
+        "purpose": "Higher-order interpolation baseline with moderate complexity.",
+        "formula_latex": "\\hat H_{\\mathrm{spline}}[k] = \\sum_{m=0}^{N_p-1} \\hat H_p^{\\mathrm{LS}}[m]\\,\\beta_3\\!\\left(\\frac{k-k_{p,m}}{\\Delta k}\\right)",
+        "implementation_hint": "Implement cubic interpolation with local 4-point polynomial fit (np.polyfit) per segment, real/imag separately."
+      },
+      {
+        "step": 5,
+        "name": "DFT delay-domain truncation after LS interpolation",
+        "purpose": "Denoise CFR by enforcing finite channel support.",
+        "formula_latex": "\\tilde h[n]=\\frac{1}{N}\\sum_{k=0}^{N-1}\\hat H_{\\mathrm{lin}}[k]e^{j2\\pi kn/N},\\;\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t},\\;\\hat H_{\\mathrm{DFT}}[k]=\\sum_{n=0}^{N-1}\\hat h_T[n]e^{-j2\\pi kn/N}",
+        "implementation_hint": "Use np.fft.ifft, zero taps from L_t onward, then np.fft.fft."
+      },
+      {
+        "step": 6,
+        "name": "Covariance-aided LMMSE Wiener interpolation",
+        "purpose": "Use TDL-based second-order statistics for minimum MSE linear reconstruction.",
+        "formula_latex": "[\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell=0}^{L_h-1}p_\\ell e^{-j2\\pi(m-n)\\ell/N},\\quad \\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}",
+        "implementation_hint": "Build Toeplitz-like covariance via vectorized phase differences; invert 16x16 matrix with np.linalg.solve."
+      },
+      {
+        "step": 7,
+        "name": "Non-pilot NMSE and confidence bands",
+        "purpose": "Quantify reconstruction quality on the 48 data subcarriers.",
+        "formula_latex": "\\mathrm{NMSE}_t=\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2},\\;\\overline{\\mathrm{NMSE}}=\\frac{1}{T}\\sum_{t=1}^T\\mathrm{NMSE}_t,\\;\\mathrm{NMSE}_{dB}=10\\log_{10}(\\overline{\\mathrm{NMSE}}),\\;\\mathrm{CI}_{95\\%}=\\bar x\\pm1.96\\frac{s}{\\sqrt{T}}",
+        "implementation_hint": "Accumulate per-trial linear NMSE arrays; use np.mean, np.std; convert to dB for reporting."
+      }
+    ],
+    "core_assumptions": [
+      "Block fading within one OFDM symbol.",
+      "Perfect synchronization and known unit-modulus pilots.",
+      "All 64 subcarriers active (no virtual carriers).",
+      "TDL-A PDP is known for simulation; covariance is available for LMMSE."
+    ],
+    "implementation_constraints": [
+      "Use notebook-contained NumPy/FFT/linear algebra only.",
+      "Any explicit inversion limited to pilot-domain size <=16x16.",
+      "Evaluate all required methods in the same Monte-Carlo/SNR loop."
+    ],
+    "failure_modes": [
+      "Covariance mismatch degrades LMMSE.",
+      "Wrong truncation length L_t causes bias or noise leakage in DFT method.",
+      "Cubic interpolation edge effects can increase error near band boundaries.",
+      "Too few trials can produce unstable CI bands."
+    ],
+    "evaluation_contract": {
+      "primary_metrics": [
+        "NMSE_dB_on_non_pilot_subcarriers",
+        "95pct_CI_or_std_band"
+      ],
+      "baseline_methods": [
+        "LS_linear_interpolation",
+        "LS_spline_interpolation",
+        "DFT_truncated_LS",
+        "LMMSE_Wiener_frequency_interpolation"
+      ],
+      "required_result_keys": [
+        "algorithm",
+        "elapsed_sec",
+        "performance_data"
+      ]
+    }
+  },
+  "evaluation_plan": {
+    "independent_variable": "SNR (dB)",
+    "variable_points": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24,
+      26,
+      28,
+      30
+    ],
+    "num_monte_carlo": 500,
+    "primary_metrics": [
+      {
+        "name": "NMSE_dB_nonpilot",
+        "formula_latex": "\\mathrm{NMSE}_{dB}=10\\log_{10}\\left(\\frac{1}{T}\\sum_{t=1}^{T}\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2}\\right)",
+        "description": "Main recovery metric on the 48 non-pilot tones."
+      },
+      {
+        "name": "CI95_linear_nmse",
+        "formula_latex": "\\mathrm{CI}_{95\\%}=\\bar x\\pm1.96\\frac{s}{\\sqrt{T}},\\;x_t=\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2}",
+        "description": "Uncertainty band over Monte-Carlo trials."
+      }
+    ],
+    "secondary_metrics": [
+      {
+        "name": "runtime_per_symbol_ms",
+        "description": "Average wall-clock runtime per estimate for each method."
+      },
+      {
+        "name": "complexity_flops_proxy",
+        "description": "Analytical complexity proxy to compare algorithmic cost."
+      },
+      {
+        "name": "nmse_gain_over_ls_linear_dB",
+        "description": "Difference in NMSE_dB relative to LS linear baseline."
+      }
+    ],
+    "baseline_methods": [
+      {
+        "name": "LS_linear_interpolation",
+        "description": "Lowest-complexity interpolation-only reference.",
+        "key_formula_latex": "\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}=\\mathbf{X}_p^{-1}\\mathbf{y}_p,\\quad \\hat H_{\\mathrm{lin}}[k]=\\mathcal{I}_{\\mathrm{lin}}\\{(k_{p,m},\\hat H_p^{\\mathrm{LS}}[m])\\}(k)",
+        "implementation_hint": "np.interp over pilot grid for real/imag parts."
+      },
+      {
+        "name": "LS_spline_interpolation",
+        "description": "Higher-order interpolation baseline.",
+        "key_formula_latex": "\\hat H_{\\mathrm{spline}}[k]=\\sum_m \\hat H_p^{\\mathrm{LS}}[m]\\,\\beta_3\\left(\\frac{k-k_{p,m}}{\\Delta k}\\right)",
+        "implementation_hint": "Local cubic polynomial interpolation with np.polyfit."
+      },
+      {
+        "name": "DFT_truncated_LS",
+        "description": "Model-aided denoising using finite delay support.",
+        "key_formula_latex": "\\tilde h[n]=\\mathrm{IFFT}\\{\\hat H_{\\mathrm{lin}}[k]\\},\\;\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t},\\;\\hat H_{\\mathrm{DFT}}[k]=\\mathrm{FFT}\\{\\hat h_T[n]\\}",
+        "implementation_hint": "np.fft.ifft -> tap truncation -> np.fft.fft."
+      },
+      {
+        "name": "LMMSE_Wiener_frequency_interpolation",
+        "description": "Covariance-driven best expected NMSE with pilot-domain inversion.",
+        "key_formula_latex": "\\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{\\mathrm{LS}},\\;[\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell}p_\\ell e^{-j2\\pi(m-n)\\ell/N}",
+        "implementation_hint": "Precompute covariance matrices per scenario; solve 16x16 linear systems with np.linalg.solve."
+      }
+    ],
+    "sensitivity_factors": [
+      {
+        "factor": "Assumed truncation length L_t (DFT method)",
+        "values": [
+          4,
+          8,
+          12,
+          16
+        ],
+        "description": "Quantifies bias-variance trade-off in delay-domain truncation."
+      },
+      {
+        "factor": "Pilot density (number of pilots)",
+        "values": [
+          8,
+          16,
+          32
+        ],
+        "description": "Tests interpolation difficulty and covariance reconstruction quality as pilot spacing changes."
+      },
+      {
+        "factor": "RMS delay spread (ns)",
+        "values": [
+          15,
+          30,
+          60
+        ],
+        "description": "Controls CFR smoothness and coherence bandwidth; directly impacts interpolation error."
+      }
+    ],
+    "plots": [
+      {
+        "title": "NMSE vs SNR on non-pilot tones",
+        "x_axis": "SNR (dB)",
+        "y_axis": "NMSE (dB)",
+        "curves": [
+          "LS_linear_interpolation",
+          "LS_spline_interpolation",
+          "DFT_truncated_LS",
+          "LMMSE_Wiener_frequency_interpolation"
+        ],
+        "scale": "linear",
+        "description": "Primary performance comparison with CI bands."
+      },
+      {
+        "title": "Sensitivity: DFT truncation length impact",
+        "x_axis": "SNR (dB)",
+        "y_axis": "NMSE (dB)",
+        "curves": [
+          "DFT_Lt4",
+          "DFT_Lt8",
+          "DFT_Lt12",
+          "DFT_Lt16"
+        ],
+        "scale": "linear",
+        "description": "Shows robustness/mismatch sensitivity of delay-domain prior."
+      },
+      {
+        "title": "Delay-domain denoising visualization",
+        "x_axis": "Delay tap index n",
+        "y_axis": "|h[n]|",
+        "curves": [
+          "true_delay_taps",
+          "ifft_of_ls_linear",
+          "after_truncation"
+        ],
+        "scale": "linear",
+        "description": "Intermediate-result plot explaining DFT-truncation behavior."
+      }
+    ],
+    "boundary_conditions": [
+      {
+        "name": "High SNR limit (30 dB)",
+        "description": "Noise is weak; model mismatch dominates.",
+        "expected_behavior": "LMMSE and DFT approach true-channel floor; LS interpolation plateaus higher."
+      },
+      {
+        "name": "Low SNR limit (0 dB)",
+        "description": "Pilot estimates are heavily noise corrupted.",
+        "expected_behavior": "LMMSE best due to Wiener shrinkage; DFT better than pure interpolation; spline may overfit noise."
+      },
+      {
+        "name": "Truncation mismatch",
+        "description": "Assumed L_t too small or too large.",
+        "expected_behavior": "Too small increases bias; too large increases variance/noise leakage."
+      }
+    ]
+  },
+  "notebook_plan": [
+    {
+      "role": "title",
+      "cell_type": "markdown",
+      "purpose": "State task, methods, and expected outputs.",
+      "must_include": [
+        "Problem statement (64-tone OFDM, 16 comb pilots, recover 48 non-pilot tones)",
+        "Compared estimators",
+        "NMSE vs SNR objective and confidence bands"
+      ]
+    },
+    {
+      "role": "problem_setup",
+      "cell_type": "markdown",
+      "purpose": "Define system parameters and assumptions.",
+      "must_include": [
+        "N=64, CP=16, pilot spacing=4",
+        "SNR sweep 0:2:30 and 500 trials/SNR",
+        "TDL-A, RMS delay spread reference 30 ns"
+      ]
+    },
+    {
+      "role": "modeling_summary",
+      "cell_type": "markdown",
+      "purpose": "Present core equations used in implementation.",
+      "must_include": [
+        "$\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p$",
+        "$\\hat{\\mathbf{h}}_p^{LS}=\\mathbf{X}_p^{-1}\\mathbf{y}_p$",
+        "DFT truncation equations",
+        "LMMSE Wiener equation with covariance"
+      ]
+    },
+    {
+      "role": "imports_setup",
+      "cell_type": "code",
+      "purpose": "Load required libraries and set reproducibility.",
+      "must_include": [
+        "import numpy as np",
+        "import matplotlib.pyplot as plt",
+        "from time import perf_counter",
+        "np.random.seed(...)"
+      ]
+    },
+    {
+      "role": "data_generation",
+      "cell_type": "code",
+      "purpose": "Implement TDL-A tap generation, CFR construction, and noisy pilot observation simulator.",
+      "must_include": [
+        "pilot/data index builders",
+        "PDP normalization",
+        "channel generation function",
+        "noise variance from SNR function"
+      ]
+    },
+    {
+      "role": "algorithm_core",
+      "cell_type": "code",
+      "purpose": "Implement all estimators in notebook functions.",
+      "must_include": [
+        "ls_linear_estimator(...)",
+        "ls_spline_estimator(...)",
+        "dft_truncated_estimator(...)",
+        "lmmse_wiener_estimator(...) with 16x16 solve",
+        "nmse_nonpilot(...)"
+      ]
+    },
+    {
+      "role": "evaluation_logic",
+      "cell_type": "code",
+      "purpose": "Create sweep function looping over every SNR point and optionally sensitivity factors; compute metrics independently per point and per method.",
+      "must_include": [
+        "for snr_db in snr_db_grid:",
+        "inner Monte-Carlo loop over trials",
+        "evaluate all methods in same loop",
+        "collect mean/std/CI and runtime",
+        "support optional factor argument (L_t, pilot count, delay spread)"
+      ]
+    },
+    {
+      "role": "execution",
+      "cell_type": "code",
+      "purpose": "Run default experiment and sensitivity experiments.",
+      "must_include": [
+        "execute primary SNR sweep",
+        "execute at least one sensitivity sweep",
+        "store outputs in required_result_keys-like dicts"
+      ]
+    },
+    {
+      "role": "plotting",
+      "cell_type": "code",
+      "purpose": "Generate required visual evidence.",
+      "must_include": [
+        "NMSE vs SNR with CI bands",
+        "Sensitivity comparison plot",
+        "Delay-domain intermediate visualization",
+        "runtime/complexity comparison chart"
+      ]
+    },
+    {
+      "role": "result_notes",
+      "cell_type": "markdown",
+      "purpose": "Summarize findings and trade-offs.",
+      "must_include": [
+        "Which method wins NMSE and where",
+        "Complexity/runtime interpretation",
+        "Observed sensitivity to L_t and pilot density"
+      ]
+    }
+  ],
+  "execution_contract": {
+    "primary_metric": "NMSE_dB_nonpilot",
+    "baseline_methods": [
+      "LS_linear_interpolation",
+      "LS_spline_interpolation",
+      "DFT_truncated_LS",
+      "LMMSE_Wiener_frequency_interpolation"
+    ],
+    "independent_variable": "SNR (dB)",
+    "variable_points": [
+      0,
+      2,
+      4,
+      6,
+      8,
+      10,
+      12,
+      14,
+      16,
+      18,
+      20,
+      22,
+      24,
+      26,
+      28,
+      30
+    ],
+    "num_monte_carlo": 500,
+    "required_roles": [
+      "title",
+      "problem_setup",
+      "modeling_summary",
+      "imports_setup",
+      "data_generation",
+      "algorithm_core",
+      "evaluation_logic",
+      "execution",
+      "plotting",
+      "result_notes"
+    ],
+    "required_result_keys": [
+      "algorithm",
+      "elapsed_sec",
+      "performance_data"
+    ],
+    "comparison_required": true,
+    "algorithm_steps": [
+      {
+        "name": "Pilot-data observation model",
+        "formula_latex": "\\mathbf{y}_p = \\mathbf{X}_p\\mathbf{h}_p + \\mathbf{n}_p,\\quad \\mathbf{n}_p\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_n^2\\mathbf{I})"
+      },
+      {
+        "name": "LS estimation on pilot tones",
+        "formula_latex": "\\hat{\\mathbf{h}}_p^{\\mathrm{LS}} = \\mathbf{X}_p^{-1}\\mathbf{y}_p\\;\\;(=\\mathbf{y}_p\\text{ for unit pilots})"
+      },
+      {
+        "name": "LS linear interpolation (low-complexity baseline)",
+        "formula_latex": "\\hat H_{\\mathrm{lin}}[k] = \\mathcal{I}_{\\mathrm{lin}}\\left\\{(k_{p,m},\\hat H_p^{\\mathrm{LS}}[m])\\right\\}(k),\\;k=0,\\dots,N-1"
+      },
+      {
+        "name": "LS spline interpolation baseline",
+        "formula_latex": "\\hat H_{\\mathrm{spline}}[k] = \\sum_{m=0}^{N_p-1} \\hat H_p^{\\mathrm{LS}}[m]\\,\\beta_3\\!\\left(\\frac{k-k_{p,m}}{\\Delta k}\\right)"
+      },
+      {
+        "name": "DFT delay-domain truncation after LS interpolation",
+        "formula_latex": "\\tilde h[n]=\\frac{1}{N}\\sum_{k=0}^{N-1}\\hat H_{\\mathrm{lin}}[k]e^{j2\\pi kn/N},\\;\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t},\\;\\hat H_{\\mathrm{DFT}}[k]=\\sum_{n=0}^{N-1}\\hat h_T[n]e^{-j2\\pi kn/N}"
+      },
+      {
+        "name": "Covariance-aided LMMSE Wiener interpolation",
+        "formula_latex": "[\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell=0}^{L_h-1}p_\\ell e^{-j2\\pi(m-n)\\ell/N},\\quad \\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}"
+      },
+      {
+        "name": "Non-pilot NMSE and confidence bands",
+        "formula_latex": "\\mathrm{NMSE}_t=\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2},\\;\\overline{\\mathrm{NMSE}}=\\frac{1}{T}\\sum_{t=1}^T\\mathrm{NMSE}_t,\\;\\mathrm{NMSE}_{dB}=10\\log_{10}(\\overline{\\mathrm{NMSE}}),\\;\\mathrm{CI}_{95\\%}=\\bar x\\pm1.96\\frac{s}{\\sqrt{T}}"
+      }
+    ],
+    "implementation_constraints": [
+      "Use notebook-contained NumPy/FFT/linear algebra only.",
+      "Any explicit inversion limited to pilot-domain size <=16x16.",
+      "Evaluate all required methods in the same Monte-Carlo/SNR loop."
+    ]
+  }
+}

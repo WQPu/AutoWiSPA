@@ -1,0 +1,3663 @@
+[
+  {
+    "stage": "S1",
+    "title": "Problem analysis result",
+    "summary_lines": [
+      "Task type: estimation|recovery",
+      "Waveform: OFDM",
+      "Primary metric: NMSE_dB",
+      "Spec complete: True"
+    ],
+    "payload": {
+      "problem_understanding": {
+        "task_category": "estimation|recovery",
+        "problem_statement": "Observed inputs are noisy pilot-subcarrier OFDM measurements on 16 equally spaced tones in a 64-subcarrier SISO system. The required output is the full channel frequency response (CFR) over all 64 tones, with emphasis on recovering the 48 non-pilot subcarriers. The core model is Y_p = X_p H_p + N_p on pilot indices, followed by interpolation/extrapolation (or model-based reconstruction) to estimate H on data indices. The task also requires at least two estimators with distinct complexity-performance trade-offs and NMSE-vs-SNR characterization from 0 to 30 dB.",
+        "exploitable_structure": "Strong frequency-domain correlation/smoothness of CFR due to small RMS delay spread (30 ns) relative to total OFDM bandwidth (0.96 MHz), plus low-dimensional delay-domain structure induced by finite CP and TDL power-delay profile. Equally spaced pilots (spacing 4 subcarriers) enable structured interpolation and covariance-based Wiener reconstruction."
+      },
+      "system_model": {
+        "waveform": "OFDM",
+        "antenna_config": {
+          "num_tx": 1,
+          "num_rx": 1,
+          "array_type": "other",
+          "additional_elements": {}
+        },
+        "channel_model": "3GPP_TDL-A",
+        "operating_conditions": {
+          "carrier_freq_ghz": 3.5,
+          "bandwidth_mhz": 0.96,
+          "mobility_kmh": 3
+        },
+        "additional_params": {
+          "num_subcarriers": 64,
+          "subcarrier_spacing_khz": 15,
+          "cp_length_samples": 16,
+          "num_pilot_subcarriers": 16,
+          "num_data_subcarriers": 48,
+          "pilot_pattern": "uniform_comb_every_4_subcarriers",
+          "rms_delay_spread_ns": 30,
+          "snr_sweep_db": {
+            "start": 0,
+            "stop": 30,
+            "step": 2
+          },
+          "required_estimation_approaches": [
+            {
+              "name": "LS_plus_piecewise_linear_or_spline_interpolation",
+              "tradeoff": "low_complexity_lower_performance"
+            },
+            {
+              "name": "LMMSE_Wiener_interpolation_using_TDL_covariance",
+              "tradeoff": "higher_complexity_higher_performance"
+            }
+          ],
+          "required_outputs": [
+            "NMSE_vs_SNR_curves_for_each_approach",
+            "interpolation_strategy_description_for_non_pilot_subcarriers"
+          ]
+        },
+        "channel_properties": [
+          "frequency_selective",
+          "multipath_fading",
+          "WSSUS_approx",
+          "pilot-correlated_in_frequency",
+          "quasi_static_within_OFDM_symbol"
+        ],
+        "carrier_freq_ghz": 3.5,
+        "bandwidth_mhz": 0.96,
+        "mobility_kmh": 3
+      },
+      "performance_targets": {
+        "primary_metric": "NMSE_dB",
+        "secondary_metrics": [
+          "complexity_flops",
+          "runtime_per_OFDM_symbol"
+        ],
+        "theoretical_bound": "LMMSE_lower_bound_given_second_order_statistics",
+        "baseline_algorithms": [
+          "LS_linear_interpolation",
+          "LMMSE_Wiener_frequency_interpolation"
+        ],
+        "target_value": null
+      },
+      "constraints": {
+        "complexity": "Include at least one low-complexity method (no large matrix inversion; interpolation-based) and one higher-performance method (covariance-aided, inversion dimension no larger than number of pilots 16x16).",
+        "data_availability": "synthetic_only"
+      },
+      "design_preferences": {
+        "approach": "classical_signal_processing",
+        "interpretability": "high",
+        "online_adaptation": false
+      },
+      "assumptions_made": [
+        "Channel estimation is performed per OFDM symbol with quasi-static channel over one symbol (low mobility default set to 3 km/h since mobility was unspecified).",
+        "Pilot symbols are known, unit-modulus (or power-normalized), and perfectly synchronized after standard OFDM timing/CFO compensation.",
+        "SNR sweep resolution is set to 2 dB for practical curve generation unless finer granularity is later requested.",
+        "NMSE is averaged over Monte Carlo channel/noise realizations with synthetic TDL-A channel generation (no measured dataset).",
+        "TDL-A covariance (or PDP-derived frequency correlation) is assumed known for LMMSE; if unknown in implementation, it is estimated from pilots/offline simulation."
+      ],
+      "task_category": "estimation|recovery",
+      "task_description": "Observed inputs are noisy pilot-subcarrier OFDM measurements on 16 equally spaced tones in a 64-subcarrier SISO system. The required output is the full channel frequency response (CFR) over all 64 tones, with emphasis on recovering the 48 non-pilot subcarriers. The core model is Y_p = X_p H_p + N_p on pilot indices, followed by interpolation/extrapolation (or model-based reconstruction) to estimate H on data indices. The task also requires at least two estimators with distinct complexity-performance trade-offs and NMSE-vs-SNR characterization from 0 to 30 dB.",
+      "exploitable_structure": "Strong frequency-domain correlation/smoothness of CFR due to small RMS delay spread (30 ns) relative to total OFDM bandwidth (0.96 MHz), plus low-dimensional delay-domain structure induced by finite CP and TDL power-delay profile. Equally spaced pilots (spacing 4 subcarriers) enable structured interpolation and covariance-based Wiener reconstruction."
+    }
+  },
+  {
+    "stage": "S2",
+    "title": "Knowledge retrieval and refinement",
+    "summary_lines": [
+      "Search query: SISO 64-subcarrier comb-pilot OFDM low-SNR non-pilot CFR reconstruction DFT-based channel interpolation extrapolation OFDM Cramer-Rao bound OFDM channel estimation",
+      "Papers found: 4",
+      "Refined task metric: NMSE_dB",
+      "Refined waveform: OFDM"
+    ],
+    "payload": {
+      "knowledge": {
+        "relevant_algorithms": [
+          "Linear Minimum Mean Square Error (LMMSE)",
+          "Maximum Likelihood (ML)",
+          "DFT-Based Channel Estimation",
+          "Wiener Filtering",
+          "Linear Interpolation",
+          "Spline Interpolation",
+          "×1-D FFT Interpolation"
+        ],
+        "relevant_papers": [
+          {
+            "title": "Interpolation-based maximum likelihood channel estimation using OFDM pilot symbols",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Haiyun Tang",
+              "K.Y. Lau",
+              "R.W. Brodersen"
+            ],
+            "year": "",
+            "source": "CrossRef(Global Telecommunications Conf)",
+            "doi": "10.1109/glocom.2002.1188521",
+            "url": "https://doi.org/10.1109/glocom.2002.1188521",
+            "citation_count": 6
+          },
+          {
+            "title": "DFT-Based Channel Estimation in Comb-Type Pilot-Aided OFDM Systems with Virtual Carriers",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Kan Zheng",
+              "Jian Su",
+              "Wenbo Wang"
+            ],
+            "year": "2007",
+            "source": "CrossRef(2007 IEEE 18th International S)",
+            "doi": "10.1109/pimrc.2007.4394389",
+            "url": "https://doi.org/10.1109/pimrc.2007.4394389",
+            "citation_count": 5
+          },
+          {
+            "title": "2×1-D fast Fourier transform interpolation for LTE-A OFDM pilot-based channel estimation",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Mohammed Zourob",
+              "Raveendra Rao"
+            ],
+            "year": "2017",
+            "source": "CrossRef(2017 International Conference )",
+            "doi": "10.1109/icecta.2017.8251938",
+            "url": "https://doi.org/10.1109/icecta.2017.8251938",
+            "citation_count": 4
+          },
+          {
+            "title": "A novel interpolation algorithm for pilot-assisted channel estimation in DDO-OFDM System",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Lilong Liu"
+            ],
+            "year": "2011",
+            "source": "CrossRef(Optical Transmission Systems, )",
+            "doi": "10.1364/acp.2011.83092k",
+            "url": "https://doi.org/10.1364/acp.2011.83092k",
+            "citation_count": 0
+          }
+        ],
+        "design_insights": "Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking... (8s elapsed)Thinking... (9s elapsed)Thinking... (10s elapsed)## 1. **Core Technical Roadmap**\n\nGiven the paper set, the dominant family is **classical pilot-aided channel estimation for OFDM**, not deep learning. The likely algorithmic map is:\n\n### A) Pilot-domain estimation + interpolation (frequency and/or time)\n- Start with pilot subcarriers:\n  \\[\n  \\hat{H}[k_p] = \\frac{Y[k_p]}{X[k_p]}\n  \\]\n  (LS estimate on pilot tones)\n- Reconstruct full-band channel via interpolation:\n  - linear / second-order / spline\n  - FFT-based interpolation\n  - ML-optimized interpolation weights\n\nThis is the core of [P1], [P3], [P4].\n\n---\n\n### B) DFT-delay domain denoising / truncation\n- Transform LS pilot-based channel estimate to delay domain via IDFT.\n- Enforce channel-length prior \\(L\\) by zeroing taps outside delay spread.\n- Transform back via DFT to get denoised channel estimate over all subcarriers.\n- In comb-type pilots with virtual carriers, account for unused edge/DC carriers to avoid bias.\n\nThis is the center of [P2], and often combined with interpolation pipelines.\n\n---\n\n### C) Complexity-aware FFT implementations\n- Replace high-order interpolation operations with FFT/IFFT blocks and structured low-cost transforms (e.g., “2×1-D FFT interpolation” in [P3]).\n- Goal: near-LMMSE quality at LS-like complexity.\n\n---\n\n### D) (Potentially) ML criterion in interpolation\n- “Interpolation-based maximum likelihood” [P1] likely means interpolation coefficients selected by likelihood/cost minimization under noise model, rather than fixed linear interpolation.\n\n---\n\n## 2. **Key Innovation Extraction**\n\n> Note: abstracts are unavailable, so this extraction is title-driven and domain-consistent.\n\n### [P1] *Interpolation-based maximum likelihood channel estimation using OFDM pilot symbols*\n1. **ML-driven interpolation parameterization**: instead of heuristic interpolation, estimate/interpolate channel using a likelihood objective tied to received pilot observations [P1].\n2. **Pilot-aided estimation with improved robustness** under noisy pilot observations compared to plain LS + linear interpolation [P1].\n\n---\n\n### [P2] *DFT-Based Channel Estimation in Comb-Type Pilot-Aided OFDM Systems with Virtual Carriers*\n1. **DFT-domain tap truncation/denoising** tailored to comb pilots, exploiting finite channel delay spread [P2].\n2. **Explicit treatment of virtual carriers** (null subcarriers) in estimation, which is important for practical OFDM spectra with guard bands/DC null [P2].\n\n---\n\n### [P3] *2×1-D fast Fourier transform interpolation for LTE-A OFDM pilot-based channel estimation*\n1. **Two-stage 1-D FFT interpolation structure** to reduce computational burden vs full 2-D interpolation [P3].\n2. **LTE-A-oriented practical estimator** balancing accuracy and complexity for pilot grids used in standards [P3].\n\n---\n\n### [P4] *A novel interpolation algorithm for pilot-assisted channel estimation in DDO-OFDM System*\n1. **New interpolation rule for pilot-assisted estimation** adapted to DDO-OFDM channel characteristics [P4].\n2. **Potentially improved interpolation under system-specific impairments** (likely optical/DDO constraints), suggesting robustness in non-ideal channel conditions [P4].\n\n---\n\n## 3. **Recommended Algorithm Framework**\n\nFor your setting (**SISO OFDM estimation/recovery**, notebook-first, NumPy-only), best two candidates:\n\n---\n\n### **Candidate 1 (Primary): LS-on-pilots + DFT-delay denoising + interpolation**\n**Why**\n- Strong classical baseline-performance tradeoff.\n- Directly aligned with [P2], and can absorb ideas from [P3].\n- Very implementable in NumPy and easy to explain.\n\n**Pipeline**\n1. LS at pilot tones.\n2. Build sparse frequency estimate on pilot grid.\n3. Interpolate to full grid (linear/spline or FFT-based).\n4. IDFT \\(\\rightarrow\\) delay domain.\n5. Keep first \\(L\\) taps (or adaptive threshold).\n6. DFT back to full-band estimate.\n7. Equalize and detect.\n\n**Strength**\n- Usually much lower NMSE than pure LS interpolation at low/moderate SNR if \\(L\\) is approximately known.\n\n---\n\n### **Candidate 2 (Secondary): ML-regularized interpolation estimator**\n**Why**\n- Captures [P1] philosophy: optimize interpolation/filter weights by minimizing a noise-aware objective.\n- Useful when pilot spacing is wide and simple interpolation underfits.\n\n**Practical notebook version**\n- Implement as **regularized weighted LS interpolation**:\n  \\[\n  \\hat{\\mathbf{h}} = \\arg\\min_{\\mathbf{h}} \\|\\mathbf{y}_p - \\mathbf{X}_p \\mathbf{S}\\mathbf{h}\\|_2^2 + \\lambda \\|\\mathbf{D}\\mathbf{h}\\|_2^2\n  \\]\n  where \\(\\mathbf{S}\\) maps full-grid channel to pilot positions and \\(\\mathbf{D}\\) enforces smoothness.\n- This is stable, ML/MAP-flavored, and easy with NumPy linear algebra.\n\n---\n\n## 4. **Notebook Implementation Guidance**\n\n## A) Narrative structure (recommended)\n1. **Problem setup**: OFDM SISO, comb pilots, virtual carriers, CP, channel model.\n2. **Baselines**:\n   - LS (pilot-only, no interpolation beyond nearest)\n   - LS + linear interpolation\n3. **Proposed methods**:\n   - DFT-based denoising estimator ([P2]-style)\n   - FFT interpolation / 2-stage interpolation ([P3]-inspired)\n   - optional regularized ML interpolation ([P1]-inspired)\n4. **Evaluation**:\n   - NMSE vs SNR\n   - BER vs SNR (QPSK/16QAM)\n   - Runtime/complexity proxy\n5. **Ablations**:\n   - Pilot spacing\n   - Channel length mismatch (\\(L_{\\text{true}}\\) vs \\(L_{\\text{assumed}}\\))\n   - Doppler (block fading vs mildly time-varying)\n\n---\n\n## B) Executable experiment design (NumPy/Matplotlib)\nUse only:\n- `numpy` for FFT, random channels, linear solves\n- `matplotlib` for curves\n- Optional `time.perf_counter` for runtime\n\n### Minimum reproducible setup\n- FFT size \\(N = 256\\) (or 512)\n- CP length \\(N_{cp} = 32\\)\n- Comb pilot spacing: every 4 or 8 subcarriers\n- Virtual carriers: guard bands + DC null\n- Channel: tapped-delay-line Rayleigh, \\(L=8\\sim16\\)\n- SNR sweep: 0 to 30 dB\n- Monte Carlo: 200–1000 OFDM symbols depending on runtime\n\n### Metrics\n- Channel NMSE:\n  \\[\n  \\mathrm{NMSE} = \\frac{\\mathbb{E}\\|\\hat{\\mathbf{H}}-\\mathbf{H}\\|_2^2}{\\mathbb{E}\\|\\mathbf{H}\\|_2^2}\n  \\]\n- BER after one-tap equalization:\n  \\[\n  \\hat{X}[k]=\\frac{Y[k]}{\\hat{H}[k]}\n  \\]\n\n### Plots to include\n- NMSE vs SNR (log scale)\n- BER vs SNR (log scale)\n- Example channel magnitude true vs estimated across subcarriers\n- Runtime bar chart per estimator\n\n---\n\n## C) Result presentation tips\n- Always include **confidence intervals** (or shaded std) over trials.\n- Report both **performance and complexity**; [P3]-style methods are about this tradeoff.\n- Explicitly state assumptions: perfect timing/frequency sync, block fading, known pilot symbols.\n\n---\n\n## 5. **Caveats**\n\n1. **Pilot/data indexing errors**  \n   Most common bug: mixing absolute FFT bins and active-subcarrier indices when virtual carriers/DC null exist.\n\n2. **FFT normalization consistency**  \n   If IFFT/FFT scaling differs across transmitter/channel estimator, NMSE can look wrong even when shape is correct.\n\n3. **Assumed channel length \\(L\\) sensitivity**  \n   DFT truncation helps only when \\(L\\) is reasonable.  \n   - Too small: signal loss (bias)  \n   - Too large: noise leakage (variance)\n\n4. **Comb pilot spacing vs coherence bandwidth**  \n   If pilot spacing is too wide for channel selectivity, any interpolation (even ML-flavored) degrades sharply.\n\n5. **Time variation within OFDM symbols**  \n   Fast fading causes ICI; one-tap per-subcarrier model weakens. Methods here mostly assume quasi-static symbol-wise channel.\n\n6. **Zero-forcing instability in deep fades**  \n   Use MMSE equalization variant in BER tests for fairness:\n   \\[\n   \\hat{X}[k] = \\frac{\\hat{H}^*[k]}{|\\hat{H}[k]|^2+\\sigma_w^2}Y[k]\n   \\]\n\n7. **Reproducibility**  \n   Fix random seeds and publish exact parameter dictionary at notebook top.\n\n---\n\nIf you want, I can next provide a **ready-to-run NumPy notebook skeleton** (cells + functions) implementing:\n- LS + linear interpolation\n- DFT-truncated estimator ([P2]-style)\n- optional regularized interpolation ([P1]-style)\nwith unified evaluation/plotting.",
+        "paper_search_query": "SISO 64-subcarrier comb-pilot OFDM low-SNR non-pilot CFR reconstruction DFT-based channel interpolation extrapolation OFDM Cramer-Rao bound OFDM channel estimation"
+      },
+      "task_spec": {
+        "problem_understanding": {
+          "task_category": "estimation|recovery|interpolation",
+          "problem_statement": "Given noisy comb-pilot OFDM observations on 16 uniformly spaced pilot tones out of 64 subcarriers in a SISO link, estimate the full 64-tone CFR per OFDM symbol, with explicit recovery quality on the 48 non-pilot tones. Pilot-domain model is Y_p = X_p H_p + N_p, followed by full-band reconstruction using interpolation and/or model-based denoising. The study must include at least two estimators with distinct complexity-performance trade-offs and report NMSE vs SNR from 0 to 30 dB.",
+          "exploitable_structure": "CFR is highly correlated across frequency because RMS delay spread (30 ns) is small relative to inverse subcarrier spacing and total occupied bandwidth (0.96 MHz). The channel is sparse/low-dimensional in delay domain under finite CP and TDL PDP, enabling DFT-domain denoising/truncation. Uniform pilot spacing of 4 subcarriers supports structured interpolation and covariance-driven Wiener reconstruction."
+        },
+        "system_model": {
+          "waveform": "OFDM",
+          "antenna_config": {
+            "num_tx": 1,
+            "num_rx": 1,
+            "array_type": "single_antenna",
+            "additional_elements": {}
+          },
+          "channel_model": "3GPP_TDL-A",
+          "operating_conditions": {
+            "carrier_freq_ghz": 3.5,
+            "bandwidth_mhz": 0.96,
+            "mobility_kmh": 3
+          },
+          "additional_params": {
+            "num_subcarriers": 64,
+            "subcarrier_spacing_khz": 15,
+            "cp_length_samples": 16,
+            "num_pilot_subcarriers": 16,
+            "num_data_subcarriers": 48,
+            "pilot_pattern": "uniform_comb_every_4_subcarriers",
+            "rms_delay_spread_ns": 30,
+            "snr_sweep_db": {
+              "start": 0,
+              "stop": 30,
+              "step": 2
+            },
+            "required_estimation_approaches": [
+              {
+                "name": "LS_plus_piecewise_linear_or_spline_interpolation",
+                "tradeoff": "lowest_complexity_reference"
+              },
+              {
+                "name": "DFT_based_delay_domain_truncation_after_LS_interpolation",
+                "tradeoff": "moderate_complexity_improved_noise_rejection"
+              },
+              {
+                "name": "LMMSE_Wiener_frequency_interpolation_using_TDL_covariance",
+                "tradeoff": "higher_complexity_best_expected_nmse"
+              }
+            ],
+            "required_outputs": [
+              "NMSE_vs_SNR_curves_for_each_approach",
+              "95pct_confidence_intervals_or_std_bands_over_trials",
+              "interpolation_or_reconstruction_strategy_for_non_pilot_subcarriers",
+              "complexity_and_runtime_comparison_per_OFDM_symbol"
+            ],
+            "pilot_symbol_model": "known_unit_modulus",
+            "virtual_carriers_present": false,
+            "monte_carlo_trials_per_snr": 500
+          },
+          "channel_properties": [
+            "frequency_selective",
+            "multipath_fading",
+            "WSSUS_approx",
+            "pilot-correlated_in_frequency",
+            "delay_domain_compressible",
+            "quasi_static_within_OFDM_symbol"
+          ],
+          "carrier_freq_ghz": 3.5,
+          "bandwidth_mhz": 0.96,
+          "mobility_kmh": 3
+        },
+        "performance_targets": {
+          "primary_metric": "NMSE_dB",
+          "secondary_metrics": [
+            "complexity_flops",
+            "runtime_per_OFDM_symbol_ms",
+            "nmse_gain_over_ls_linear_dB"
+          ],
+          "theoretical_bound": "LMMSE_lower_bound_given_second_order_statistics",
+          "baseline_algorithms": [
+            "LS_linear_interpolation",
+            "LS_spline_interpolation",
+            "DFT_truncated_LS",
+            "LMMSE_Wiener_frequency_interpolation"
+          ],
+          "target_value": null
+        },
+        "constraints": {
+          "complexity": "Include at least one interpolation-only low-complexity method with no large matrix inversion, and at least one covariance/model-aided method; any explicit inversion must be dimension <= 16x16 (pilot-domain).",
+          "data_availability": "synthetic_only",
+          "implementation": "classical_numpy_fft_linear_algebra"
+        },
+        "design_preferences": {
+          "approach": "classical_signal_processing",
+          "interpretability": "high",
+          "online_adaptation": false
+        },
+        "assumptions_made": [
+          "Per-symbol channel estimation assumes block fading over one OFDM symbol; mobility fixed at 3 km/h as low-speed default.",
+          "Pilot symbols are perfectly known, power-normalized, and synchronization impairments (timing/CFO/phase noise) are pre-compensated.",
+          "All 64 subcarriers are active (no guard/DC null) unless explicitly changed later; hence pilot/data partition is 16/48.",
+          "SNR sweep uses 2 dB resolution for stable curve generation with manageable runtime.",
+          "NMSE is averaged over independent Monte Carlo channel/noise realizations generated from synthetic 3GPP TDL-A.",
+          "For LMMSE, second-order statistics are available via PDP-derived covariance (or accurately pre-estimated offline).",
+          "For DFT-based estimator, effective channel length used for tap truncation is inferred from PDP/CP and treated as a tunable hyperparameter.",
+          "Runtime and FLOP comparisons are performed under identical simulation settings and implementation language."
+        ],
+        "task_category": "estimation|recovery|interpolation",
+        "task_description": "Estimate full-band OFDM CFR from noisy comb pilots in a 64-subcarrier SISO system with 16 pilot tones (spacing 4). Compare at least two estimators with clear complexity-performance separation, now refined to include (i) LS + interpolation baseline, (ii) DFT delay-domain denoising/truncation variant, and (iii) covariance-aided LMMSE Wiener interpolation. Evaluate NMSE_dB vs SNR (0:2:30 dB) with Monte Carlo averaging and confidence bands, and report runtime/complexity trade-offs.",
+        "exploitable_structure": "Small delay spread relative to system bandwidth yields smooth CFR and strong pilot-to-data frequency correlation; finite-delay channel support and CP allow DFT-domain truncation denoising; uniform comb pilots enable both simple interpolation and structured Wiener reconstruction with pilot-domain covariance."
+      }
+    }
+  },
+  {
+    "stage": "S3",
+    "title": "Unified model formalization",
+    "summary_lines": [
+      "Signal type: unknown",
+      "Scenario count: 0",
+      "Problem type: unknown",
+      "Key formulas: 0",
+      "Algorithm: unknown",
+      "Algorithm steps: 0",
+      "Baselines: 0"
+    ],
+    "payload": {
+      "scenario_spec": {
+        "signal_type": "unknown",
+        "core_parameters": {},
+        "snr_range_db": [],
+        "test_scenarios": [],
+        "data_contract": {
+          "inputs": [],
+          "expected_outputs": []
+        },
+        "generation_notes": ""
+      },
+      "system_model_doc": "",
+      "math_formulation": {
+        "problem_type": "unknown",
+        "objective": {
+          "type": "unknown",
+          "description": "",
+          "formula_latex": ""
+        },
+        "variables": [],
+        "constraints": [],
+        "key_formulas": [],
+        "assumptions": [],
+        "model_properties": {
+          "convexity": "unknown",
+          "closed_form": false,
+          "iterative_required": true,
+          "special_structure": ""
+        },
+        "formulation_markdown": ""
+      },
+      "formalization_summary": {
+        "design_implications": [],
+        "evaluation_focus": [],
+        "implementation_risks": []
+      },
+      "algorithm_design": {
+        "proposed_algorithm": {
+          "name": "unknown",
+          "type": "unknown",
+          "summary": ""
+        },
+        "algorithm_steps": [],
+        "baseline_algorithms": [],
+        "convergence": {
+          "criterion": "",
+          "typical_iterations": null,
+          "formula_latex": ""
+        },
+        "complexity": {
+          "per_iteration": "",
+          "dominant_operation": ""
+        }
+      }
+    }
+  },
+  {
+    "stage": "S4",
+    "title": "Solution planning",
+    "summary_lines": [
+      "Architecture: CombPilot64_CFR_Estimation_Suite",
+      "Strategy: LS-Interpolation + DFT-Denoising + Pilot-Domain LMMSE Wiener",
+      "Notebook cells planned: 10",
+      "Primary metrics: NMSE_dB_nonpilot, CI95_linear_nmse"
+    ],
+    "payload": {
+      "architecture": {
+        "name": "CombPilot64_CFR_Estimation_Suite",
+        "strategy_label": "LS-Interpolation + DFT-Denoising + Pilot-Domain LMMSE Wiener",
+        "summary": "Estimate full 64-tone CFR from 16 comb pilots (spacing 4) using three classical estimators with increasing complexity: LS+linear/spline interpolation, DFT delay-domain truncation after LS interpolation, and covariance-aided LMMSE Wiener reconstruction.",
+        "rationale": "The channel is frequency-correlated (small RMS delay spread) and delay-compressible under CP. Hence interpolation is a low-complexity baseline, DFT truncation adds model-based denoising, and LMMSE exploits second-order statistics for best NMSE at higher compute cost while keeping inversion in pilot domain (16x16).",
+        "algorithm_structure": "Single Monte-Carlo sweep framework: generate TDL-A channels and pilot observations per SNR; compute all estimators on each trial; accumulate NMSE on non-pilot tones, confidence bands, runtime, and complexity proxies; plot trade-offs.",
+        "pseudocode": "1) Define OFDM and pilot indices: N=64, P={0,4,...,60}, D=all\\P. Build SNR grid 0:2:30.\n2) For each SNR point and trial, generate delay-domain taps \\(h[\\ell]\\sim\\mathcal{CN}(0,p_\\ell)\\), then CFR \\(H[k]=\\sum_{\\ell=0}^{L_h-1} h[\\ell]e^{-j2\\pi k\\ell/N}\\).\n3) Form pilot observations via \\(\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p\\), with \\(|X_p|=1\\), \\(\\mathbf{n}_p\\sim\\mathcal{CN}(0,\\sigma_n^2\\mathbf{I})\\).\n4) Compute LS pilot estimate \\(\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}=\\mathbf{X}_p^{-1}\\mathbf{y}_p\\).\n5) Baseline A (linear): reconstruct full band by piecewise interpolation \\(\\hat H_{\\mathrm{lin}}[k]=\\mathcal{I}_{\\mathrm{lin}}\\{(k_{p,m},\\hat H_p^{LS}[m])\\}(k)\\).\n6) Baseline B (spline): reconstruct by cubic basis \\(\\hat H_{\\mathrm{spline}}[k]=\\sum_m \\hat H_p^{LS}[m]\\,\\beta_3((k-k_{p,m})/\\Delta k)\\).\n7) Method C (DFT-truncated): \\(\\tilde h[n]=\\frac{1}{N}\\sum_{k=0}^{N-1}\\hat H_{\\mathrm{lin}}[k]e^{j2\\pi kn/N}\\), truncate \\(\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t}\\), then \\(\\hat H_{\\mathrm{DFT}}[k]=\\sum_{n=0}^{N-1}\\hat h_T[n]e^{-j2\\pi kn/N}\\).\n8) Method D (LMMSE Wiener): build covariance \\([\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell}p_\\ell e^{-j2\\pi(m-n)\\ell/N}\\), then \\(\\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{LS}\\).\n9) Compute non-pilot NMSE per method: \\(\\mathrm{NMSE}=\\frac{\\|\\hat{\\mathbf{H}}_D-\\mathbf{H}_D\\|_2^2}{\\|\\mathbf{H}_D\\|_2^2}\\), then \\(\\mathrm{NMSE}_{dB}=10\\log_{10}(\\frac{1}{T}\\sum_t\\mathrm{NMSE}_t)\\).\n10) Store mean, std, 95% CI \\(\\bar x\\pm1.96\\,s/\\sqrt{T}\\), runtime, and complexity proxies; plot curves and sensitivity studies.",
+        "estimated_complexity": "Per OFDM symbol: LS+linear O(N), LS+spline O(N), DFT-trunc O(N log N), LMMSE O(N_p^3 + N N_p) with N_p=16 (pilot-domain inversion only).",
+        "confidence": 0.9,
+        "potential_weakness": "LMMSE depends on covariance/PDP accuracy; DFT truncation is sensitive to assumed tap length L_t; spline can overshoot near edges."
+      },
+      "algorithm_spec": {
+        "objective": "Recover full-band CFR \\(\\hat{\\mathbf{H}}\\in\\mathbb{C}^{64}\\) from noisy comb pilots and minimize non-pilot NMSE across SNR sweep while reporting runtime/complexity trade-offs.",
+        "inputs": [
+          {
+            "name": "snr_db_grid",
+            "shape": "[16]",
+            "dtype": "float",
+            "description": "SNR points from 0 to 30 dB with 2 dB step."
+          },
+          {
+            "name": "num_trials",
+            "shape": "scalar",
+            "dtype": "int",
+            "description": "Monte-Carlo trials per SNR (500)."
+          },
+          {
+            "name": "ofdm_params",
+            "shape": "dict",
+            "dtype": "object",
+            "description": "Contains N=64, Np=16, pilot_spacing=4, CP=16, pilot indices, data indices."
+          },
+          {
+            "name": "tdl_pdp",
+            "shape": "[L_h]",
+            "dtype": "float",
+            "description": "Normalized TDL-A tap powers used for channel generation and covariance construction."
+          },
+          {
+            "name": "assumed_trunc_len",
+            "shape": "scalar",
+            "dtype": "int",
+            "description": "Delay-domain truncation length L_t for DFT-based method."
+          }
+        ],
+        "outputs": [
+          {
+            "name": "nmse_db_curves",
+            "shape": "[num_methods, num_snr]",
+            "dtype": "float",
+            "description": "Mean NMSE in dB on non-pilot tones for each method."
+          },
+          {
+            "name": "nmse_ci95_db",
+            "shape": "[num_methods, num_snr, 2]",
+            "dtype": "float",
+            "description": "Lower/upper 95% CI of NMSE_dB or CI band from linear-scale NMSE."
+          },
+          {
+            "name": "runtime_ms_per_symbol",
+            "shape": "[num_methods, num_snr]",
+            "dtype": "float",
+            "description": "Average runtime per OFDM symbol estimate."
+          },
+          {
+            "name": "complexity_flops_proxy",
+            "shape": "[num_methods]",
+            "dtype": "float",
+            "description": "Analytical FLOP proxy by method."
+          },
+          {
+            "name": "example_reconstructions",
+            "shape": "dict",
+            "dtype": "object",
+            "description": "Sample true/estimated CFR and delay profiles for visualization."
+          }
+        ],
+        "pipeline": [
+          {
+            "step": 1,
+            "name": "Pilot-data observation model",
+            "purpose": "Construct noisy pilot observations from true CFR.",
+            "formula_latex": "\\mathbf{y}_p = \\mathbf{X}_p\\mathbf{h}_p + \\mathbf{n}_p,\\quad \\mathbf{n}_p\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_n^2\\mathbf{I})",
+            "implementation_hint": "Use complex Gaussian noise via np.random.randn + 1j*np.random.randn scaled by noise variance."
+          },
+          {
+            "step": 2,
+            "name": "LS estimation on pilot tones",
+            "purpose": "Obtain unbiased pilot-domain channel estimate.",
+            "formula_latex": "\\hat{\\mathbf{h}}_p^{\\mathrm{LS}} = \\mathbf{X}_p^{-1}\\mathbf{y}_p\\;\\;(=\\mathbf{y}_p\\text{ for unit pilots})",
+            "implementation_hint": "Elementwise divide y_p / x_p using NumPy broadcasting."
+          },
+          {
+            "step": 3,
+            "name": "LS linear interpolation (low-complexity baseline)",
+            "purpose": "Reconstruct full CFR using piecewise linear interpolation from pilot LS values.",
+            "formula_latex": "\\hat H_{\\mathrm{lin}}[k] = \\mathcal{I}_{\\mathrm{lin}}\\left\\{(k_{p,m},\\hat H_p^{\\mathrm{LS}}[m])\\right\\}(k),\\;k=0,\\dots,N-1",
+            "implementation_hint": "Use np.interp on real/imag parts separately, then recombine."
+          },
+          {
+            "step": 4,
+            "name": "LS spline interpolation baseline",
+            "purpose": "Higher-order interpolation baseline with moderate complexity.",
+            "formula_latex": "\\hat H_{\\mathrm{spline}}[k] = \\sum_{m=0}^{N_p-1} \\hat H_p^{\\mathrm{LS}}[m]\\,\\beta_3\\!\\left(\\frac{k-k_{p,m}}{\\Delta k}\\right)",
+            "implementation_hint": "Implement cubic interpolation with local 4-point polynomial fit (np.polyfit) per segment, real/imag separately."
+          },
+          {
+            "step": 5,
+            "name": "DFT delay-domain truncation after LS interpolation",
+            "purpose": "Denoise CFR by enforcing finite channel support.",
+            "formula_latex": "\\tilde h[n]=\\frac{1}{N}\\sum_{k=0}^{N-1}\\hat H_{\\mathrm{lin}}[k]e^{j2\\pi kn/N},\\;\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t},\\;\\hat H_{\\mathrm{DFT}}[k]=\\sum_{n=0}^{N-1}\\hat h_T[n]e^{-j2\\pi kn/N}",
+            "implementation_hint": "Use np.fft.ifft, zero taps from L_t onward, then np.fft.fft."
+          },
+          {
+            "step": 6,
+            "name": "Covariance-aided LMMSE Wiener interpolation",
+            "purpose": "Use TDL-based second-order statistics for minimum MSE linear reconstruction.",
+            "formula_latex": "[\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell=0}^{L_h-1}p_\\ell e^{-j2\\pi(m-n)\\ell/N},\\quad \\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}",
+            "implementation_hint": "Build Toeplitz-like covariance via vectorized phase differences; invert 16x16 matrix with np.linalg.solve."
+          },
+          {
+            "step": 7,
+            "name": "Non-pilot NMSE and confidence bands",
+            "purpose": "Quantify reconstruction quality on the 48 data subcarriers.",
+            "formula_latex": "\\mathrm{NMSE}_t=\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2},\\;\\overline{\\mathrm{NMSE}}=\\frac{1}{T}\\sum_{t=1}^T\\mathrm{NMSE}_t,\\;\\mathrm{NMSE}_{dB}=10\\log_{10}(\\overline{\\mathrm{NMSE}}),\\;\\mathrm{CI}_{95\\%}=\\bar x\\pm1.96\\frac{s}{\\sqrt{T}}",
+            "implementation_hint": "Accumulate per-trial linear NMSE arrays; use np.mean, np.std; convert to dB for reporting."
+          }
+        ],
+        "core_assumptions": [
+          "Block fading within one OFDM symbol.",
+          "Perfect synchronization and known unit-modulus pilots.",
+          "All 64 subcarriers active (no virtual carriers).",
+          "TDL-A PDP is known for simulation; covariance is available for LMMSE."
+        ],
+        "implementation_constraints": [
+          "Use notebook-contained NumPy/FFT/linear algebra only.",
+          "Any explicit inversion limited to pilot-domain size <=16x16.",
+          "Evaluate all required methods in the same Monte-Carlo/SNR loop."
+        ],
+        "failure_modes": [
+          "Covariance mismatch degrades LMMSE.",
+          "Wrong truncation length L_t causes bias or noise leakage in DFT method.",
+          "Cubic interpolation edge effects can increase error near band boundaries.",
+          "Too few trials can produce unstable CI bands."
+        ],
+        "evaluation_contract": {
+          "primary_metrics": [
+            "NMSE_dB_on_non_pilot_subcarriers",
+            "95pct_CI_or_std_band"
+          ],
+          "baseline_methods": [
+            "LS_linear_interpolation",
+            "LS_spline_interpolation",
+            "DFT_truncated_LS",
+            "LMMSE_Wiener_frequency_interpolation"
+          ],
+          "required_result_keys": [
+            "algorithm",
+            "elapsed_sec",
+            "performance_data"
+          ]
+        }
+      },
+      "evaluation_plan": {
+        "independent_variable": "SNR (dB)",
+        "variable_points": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "num_monte_carlo": 500,
+        "primary_metrics": [
+          {
+            "name": "NMSE_dB_nonpilot",
+            "formula_latex": "\\mathrm{NMSE}_{dB}=10\\log_{10}\\left(\\frac{1}{T}\\sum_{t=1}^{T}\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2}\\right)",
+            "description": "Main recovery metric on the 48 non-pilot tones."
+          },
+          {
+            "name": "CI95_linear_nmse",
+            "formula_latex": "\\mathrm{CI}_{95\\%}=\\bar x\\pm1.96\\frac{s}{\\sqrt{T}},\\;x_t=\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2}",
+            "description": "Uncertainty band over Monte-Carlo trials."
+          }
+        ],
+        "secondary_metrics": [
+          {
+            "name": "runtime_per_symbol_ms",
+            "description": "Average wall-clock runtime per estimate for each method."
+          },
+          {
+            "name": "complexity_flops_proxy",
+            "description": "Analytical complexity proxy to compare algorithmic cost."
+          },
+          {
+            "name": "nmse_gain_over_ls_linear_dB",
+            "description": "Difference in NMSE_dB relative to LS linear baseline."
+          }
+        ],
+        "baseline_methods": [
+          {
+            "name": "LS_linear_interpolation",
+            "description": "Lowest-complexity interpolation-only reference.",
+            "key_formula_latex": "\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}=\\mathbf{X}_p^{-1}\\mathbf{y}_p,\\quad \\hat H_{\\mathrm{lin}}[k]=\\mathcal{I}_{\\mathrm{lin}}\\{(k_{p,m},\\hat H_p^{\\mathrm{LS}}[m])\\}(k)",
+            "implementation_hint": "np.interp over pilot grid for real/imag parts."
+          },
+          {
+            "name": "LS_spline_interpolation",
+            "description": "Higher-order interpolation baseline.",
+            "key_formula_latex": "\\hat H_{\\mathrm{spline}}[k]=\\sum_m \\hat H_p^{\\mathrm{LS}}[m]\\,\\beta_3\\left(\\frac{k-k_{p,m}}{\\Delta k}\\right)",
+            "implementation_hint": "Local cubic polynomial interpolation with np.polyfit."
+          },
+          {
+            "name": "DFT_truncated_LS",
+            "description": "Model-aided denoising using finite delay support.",
+            "key_formula_latex": "\\tilde h[n]=\\mathrm{IFFT}\\{\\hat H_{\\mathrm{lin}}[k]\\},\\;\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t},\\;\\hat H_{\\mathrm{DFT}}[k]=\\mathrm{FFT}\\{\\hat h_T[n]\\}",
+            "implementation_hint": "np.fft.ifft -> tap truncation -> np.fft.fft."
+          },
+          {
+            "name": "LMMSE_Wiener_frequency_interpolation",
+            "description": "Covariance-driven best expected NMSE with pilot-domain inversion.",
+            "key_formula_latex": "\\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{\\mathrm{LS}},\\;[\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell}p_\\ell e^{-j2\\pi(m-n)\\ell/N}",
+            "implementation_hint": "Precompute covariance matrices per scenario; solve 16x16 linear systems with np.linalg.solve."
+          }
+        ],
+        "sensitivity_factors": [
+          {
+            "factor": "Assumed truncation length L_t (DFT method)",
+            "values": [
+              4,
+              8,
+              12,
+              16
+            ],
+            "description": "Quantifies bias-variance trade-off in delay-domain truncation."
+          },
+          {
+            "factor": "Pilot density (number of pilots)",
+            "values": [
+              8,
+              16,
+              32
+            ],
+            "description": "Tests interpolation difficulty and covariance reconstruction quality as pilot spacing changes."
+          },
+          {
+            "factor": "RMS delay spread (ns)",
+            "values": [
+              15,
+              30,
+              60
+            ],
+            "description": "Controls CFR smoothness and coherence bandwidth; directly impacts interpolation error."
+          }
+        ],
+        "plots": [
+          {
+            "title": "NMSE vs SNR on non-pilot tones",
+            "x_axis": "SNR (dB)",
+            "y_axis": "NMSE (dB)",
+            "curves": [
+              "LS_linear_interpolation",
+              "LS_spline_interpolation",
+              "DFT_truncated_LS",
+              "LMMSE_Wiener_frequency_interpolation"
+            ],
+            "scale": "linear",
+            "description": "Primary performance comparison with CI bands."
+          },
+          {
+            "title": "Sensitivity: DFT truncation length impact",
+            "x_axis": "SNR (dB)",
+            "y_axis": "NMSE (dB)",
+            "curves": [
+              "DFT_Lt4",
+              "DFT_Lt8",
+              "DFT_Lt12",
+              "DFT_Lt16"
+            ],
+            "scale": "linear",
+            "description": "Shows robustness/mismatch sensitivity of delay-domain prior."
+          },
+          {
+            "title": "Delay-domain denoising visualization",
+            "x_axis": "Delay tap index n",
+            "y_axis": "|h[n]|",
+            "curves": [
+              "true_delay_taps",
+              "ifft_of_ls_linear",
+              "after_truncation"
+            ],
+            "scale": "linear",
+            "description": "Intermediate-result plot explaining DFT-truncation behavior."
+          }
+        ],
+        "boundary_conditions": [
+          {
+            "name": "High SNR limit (30 dB)",
+            "description": "Noise is weak; model mismatch dominates.",
+            "expected_behavior": "LMMSE and DFT approach true-channel floor; LS interpolation plateaus higher."
+          },
+          {
+            "name": "Low SNR limit (0 dB)",
+            "description": "Pilot estimates are heavily noise corrupted.",
+            "expected_behavior": "LMMSE best due to Wiener shrinkage; DFT better than pure interpolation; spline may overfit noise."
+          },
+          {
+            "name": "Truncation mismatch",
+            "description": "Assumed L_t too small or too large.",
+            "expected_behavior": "Too small increases bias; too large increases variance/noise leakage."
+          }
+        ]
+      },
+      "notebook_plan": [
+        {
+          "role": "title",
+          "cell_type": "markdown",
+          "purpose": "State task, methods, and expected outputs.",
+          "must_include": [
+            "Problem statement (64-tone OFDM, 16 comb pilots, recover 48 non-pilot tones)",
+            "Compared estimators",
+            "NMSE vs SNR objective and confidence bands"
+          ]
+        },
+        {
+          "role": "problem_setup",
+          "cell_type": "markdown",
+          "purpose": "Define system parameters and assumptions.",
+          "must_include": [
+            "N=64, CP=16, pilot spacing=4",
+            "SNR sweep 0:2:30 and 500 trials/SNR",
+            "TDL-A, RMS delay spread reference 30 ns"
+          ]
+        },
+        {
+          "role": "modeling_summary",
+          "cell_type": "markdown",
+          "purpose": "Present core equations used in implementation.",
+          "must_include": [
+            "$\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p$",
+            "$\\hat{\\mathbf{h}}_p^{LS}=\\mathbf{X}_p^{-1}\\mathbf{y}_p$",
+            "DFT truncation equations",
+            "LMMSE Wiener equation with covariance"
+          ]
+        },
+        {
+          "role": "imports_setup",
+          "cell_type": "code",
+          "purpose": "Load required libraries and set reproducibility.",
+          "must_include": [
+            "import numpy as np",
+            "import matplotlib.pyplot as plt",
+            "from time import perf_counter",
+            "np.random.seed(...)"
+          ]
+        },
+        {
+          "role": "data_generation",
+          "cell_type": "code",
+          "purpose": "Implement TDL-A tap generation, CFR construction, and noisy pilot observation simulator.",
+          "must_include": [
+            "pilot/data index builders",
+            "PDP normalization",
+            "channel generation function",
+            "noise variance from SNR function"
+          ]
+        },
+        {
+          "role": "algorithm_core",
+          "cell_type": "code",
+          "purpose": "Implement all estimators in notebook functions.",
+          "must_include": [
+            "ls_linear_estimator(...)",
+            "ls_spline_estimator(...)",
+            "dft_truncated_estimator(...)",
+            "lmmse_wiener_estimator(...) with 16x16 solve",
+            "nmse_nonpilot(...)"
+          ]
+        },
+        {
+          "role": "evaluation_logic",
+          "cell_type": "code",
+          "purpose": "Create sweep function looping over every SNR point and optionally sensitivity factors; compute metrics independently per point and per method.",
+          "must_include": [
+            "for snr_db in snr_db_grid:",
+            "inner Monte-Carlo loop over trials",
+            "evaluate all methods in same loop",
+            "collect mean/std/CI and runtime",
+            "support optional factor argument (L_t, pilot count, delay spread)"
+          ]
+        },
+        {
+          "role": "execution",
+          "cell_type": "code",
+          "purpose": "Run default experiment and sensitivity experiments.",
+          "must_include": [
+            "execute primary SNR sweep",
+            "execute at least one sensitivity sweep",
+            "store outputs in required_result_keys-like dicts"
+          ]
+        },
+        {
+          "role": "plotting",
+          "cell_type": "code",
+          "purpose": "Generate required visual evidence.",
+          "must_include": [
+            "NMSE vs SNR with CI bands",
+            "Sensitivity comparison plot",
+            "Delay-domain intermediate visualization",
+            "runtime/complexity comparison chart"
+          ]
+        },
+        {
+          "role": "result_notes",
+          "cell_type": "markdown",
+          "purpose": "Summarize findings and trade-offs.",
+          "must_include": [
+            "Which method wins NMSE and where",
+            "Complexity/runtime interpretation",
+            "Observed sensitivity to L_t and pilot density"
+          ]
+        }
+      ],
+      "execution_contract": {
+        "primary_metric": "NMSE_dB_nonpilot",
+        "baseline_methods": [
+          "LS_linear_interpolation",
+          "LS_spline_interpolation",
+          "DFT_truncated_LS",
+          "LMMSE_Wiener_frequency_interpolation"
+        ],
+        "independent_variable": "SNR (dB)",
+        "variable_points": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "num_monte_carlo": 500,
+        "required_roles": [
+          "title",
+          "problem_setup",
+          "modeling_summary",
+          "imports_setup",
+          "data_generation",
+          "algorithm_core",
+          "evaluation_logic",
+          "execution",
+          "plotting",
+          "result_notes"
+        ],
+        "required_result_keys": [
+          "algorithm",
+          "elapsed_sec",
+          "performance_data"
+        ],
+        "comparison_required": true,
+        "algorithm_steps": [
+          {
+            "name": "Pilot-data observation model",
+            "formula_latex": "\\mathbf{y}_p = \\mathbf{X}_p\\mathbf{h}_p + \\mathbf{n}_p,\\quad \\mathbf{n}_p\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_n^2\\mathbf{I})"
+          },
+          {
+            "name": "LS estimation on pilot tones",
+            "formula_latex": "\\hat{\\mathbf{h}}_p^{\\mathrm{LS}} = \\mathbf{X}_p^{-1}\\mathbf{y}_p\\;\\;(=\\mathbf{y}_p\\text{ for unit pilots})"
+          },
+          {
+            "name": "LS linear interpolation (low-complexity baseline)",
+            "formula_latex": "\\hat H_{\\mathrm{lin}}[k] = \\mathcal{I}_{\\mathrm{lin}}\\left\\{(k_{p,m},\\hat H_p^{\\mathrm{LS}}[m])\\right\\}(k),\\;k=0,\\dots,N-1"
+          },
+          {
+            "name": "LS spline interpolation baseline",
+            "formula_latex": "\\hat H_{\\mathrm{spline}}[k] = \\sum_{m=0}^{N_p-1} \\hat H_p^{\\mathrm{LS}}[m]\\,\\beta_3\\!\\left(\\frac{k-k_{p,m}}{\\Delta k}\\right)"
+          },
+          {
+            "name": "DFT delay-domain truncation after LS interpolation",
+            "formula_latex": "\\tilde h[n]=\\frac{1}{N}\\sum_{k=0}^{N-1}\\hat H_{\\mathrm{lin}}[k]e^{j2\\pi kn/N},\\;\\hat h_T[n]=\\tilde h[n]\\mathbf{1}_{0\\le n<L_t},\\;\\hat H_{\\mathrm{DFT}}[k]=\\sum_{n=0}^{N-1}\\hat h_T[n]e^{-j2\\pi kn/N}"
+          },
+          {
+            "name": "Covariance-aided LMMSE Wiener interpolation",
+            "formula_latex": "[\\mathbf{R}_{HH}]_{m,n}=\\sum_{\\ell=0}^{L_h-1}p_\\ell e^{-j2\\pi(m-n)\\ell/N},\\quad \\hat{\\mathbf{H}}_{\\mathrm{LMMSE}}=\\mathbf{R}_{Hp}(\\mathbf{R}_{pp}+\\sigma_n^2\\mathbf{I})^{-1}\\hat{\\mathbf{h}}_p^{\\mathrm{LS}}"
+          },
+          {
+            "name": "Non-pilot NMSE and confidence bands",
+            "formula_latex": "\\mathrm{NMSE}_t=\\frac{\\|\\hat{\\mathbf{H}}_D^{(t)}-\\mathbf{H}_D^{(t)}\\|_2^2}{\\|\\mathbf{H}_D^{(t)}\\|_2^2},\\;\\overline{\\mathrm{NMSE}}=\\frac{1}{T}\\sum_{t=1}^T\\mathrm{NMSE}_t,\\;\\mathrm{NMSE}_{dB}=10\\log_{10}(\\overline{\\mathrm{NMSE}}),\\;\\mathrm{CI}_{95\\%}=\\bar x\\pm1.96\\frac{s}{\\sqrt{T}}"
+          }
+        ],
+        "implementation_constraints": [
+          "Use notebook-contained NumPy/FFT/linear algebra only.",
+          "Any explicit inversion limited to pilot-domain size <=16x16.",
+          "Evaluate all required methods in the same Monte-Carlo/SNR loop."
+        ]
+      }
+    }
+  },
+  {
+    "stage": "S5",
+    "title": "Notebook generation",
+    "summary_lines": [
+      "Generation mode: fresh",
+      "Notebook cells: 15",
+      "Code cells: 6",
+      "Markdown cells: 9"
+    ],
+    "payload": {
+      "cells": 15,
+      "code_cells": 6,
+      "markdown_cells": 9,
+      "roles": [
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup",
+        "imports_setup_narrative",
+        "data_generation",
+        "data_generation_narrative",
+        "algorithm_core",
+        "algorithm_core_narrative",
+        "evaluation_logic",
+        "evaluation_logic_narrative",
+        "execution",
+        "execution_narrative",
+        "plotting",
+        "result_notes",
+        "title"
+      ],
+      "code_roles": [
+        "imports_setup",
+        "data_generation",
+        "algorithm_core",
+        "evaluation_logic",
+        "execution",
+        "plotting"
+      ],
+      "markdown_roles": [
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup_narrative",
+        "data_generation_narrative",
+        "algorithm_core_narrative",
+        "evaluation_logic_narrative",
+        "execution_narrative",
+        "result_notes",
+        "title"
+      ]
+    }
+  },
+  {
+    "stage": "S6",
+    "title": "Notebook verification",
+    "summary_lines": [
+      "Status: passed",
+      "Warnings: 1",
+      "Required roles: title, problem_setup, modeling_summary, imports_setup, data_generation, algorithm_core, evaluation_logic, execution, plotting, result_notes"
+    ],
+    "payload": {
+      "status": "passed",
+      "errors": [],
+      "warnings": [
+        "Task primary metric 'NMSE_dB' is not explicitly listed in evaluation_plan primary_metrics ['NMSE_dB_nonpilot', 'CI95_linear_nmse']"
+      ],
+      "repair_guidance": [
+        "Notebook verification passed"
+      ],
+      "required_roles": [
+        "title",
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup",
+        "data_generation",
+        "algorithm_core",
+        "evaluation_logic",
+        "execution",
+        "plotting",
+        "result_notes"
+      ],
+      "notebook_summary": {
+        "cells": 15,
+        "code_cells": 6,
+        "markdown_cells": 9,
+        "roles": [
+          "problem_setup",
+          "modeling_summary",
+          "imports_setup",
+          "imports_setup_narrative",
+          "data_generation",
+          "data_generation_narrative",
+          "algorithm_core",
+          "algorithm_core_narrative",
+          "evaluation_logic",
+          "evaluation_logic_narrative",
+          "execution",
+          "execution_narrative",
+          "plotting",
+          "result_notes",
+          "title"
+        ]
+      }
+    }
+  },
+  {
+    "stage": "S7",
+    "title": "Notebook simulation",
+    "summary_lines": [
+      "Status: success",
+      "Execution time: 15.827423095703125s",
+      "Performance fields: metric_curve, metric_ci95, runtime_ms_per_symbol, complexity_flops_per_symbol, nmse_gain_over_ls_linear_dB, dft_truncation_sensitivity_curves, snapshot_sensitivity, delay_domain_example"
+    ],
+    "payload": {
+      "status": "success",
+      "evaluation_level": "notebook",
+      "performance_data": {
+        "metric_curve": {
+          "x": [
+            0.0,
+            2.0,
+            4.0,
+            6.0,
+            8.0,
+            10.0,
+            12.0,
+            14.0,
+            16.0,
+            18.0,
+            20.0,
+            22.0,
+            24.0,
+            26.0,
+            28.0,
+            30.0
+          ],
+          "LS_linear_interpolation": [
+            -2.485743790774237,
+            -4.479977252519684,
+            -6.434112574778916,
+            -8.351911843863874,
+            -10.386161863014626,
+            -12.275024173592547,
+            -14.232744686277416,
+            -15.995892779173664,
+            -17.80077425166268,
+            -19.58811466321555,
+            -21.105414067568695,
+            -22.58421426557419,
+            -24.02564498847087,
+            -25.199389819823796,
+            -26.02229654296969,
+            -26.882363106470613
+          ],
+          "LS_spline_interpolation": [
+            -0.9243155090128262,
+            -2.9285210458571957,
+            -4.890982293467982,
+            -6.804695596036092,
+            -8.8748100414651,
+            -10.75043037373271,
+            -12.760459762064281,
+            -14.552039909847267,
+            -16.363633017053623,
+            -18.20398687688075,
+            -19.782324169977286,
+            -21.371321919554376,
+            -22.849580828860883,
+            -24.151159571748085,
+            -25.061590685568852,
+            -26.019566652533047
+          ],
+          "DFT_truncated_LS": [
+            -4.747097729223082,
+            -6.694731398650251,
+            -8.6381817702519,
+            -10.473538208903337,
+            -12.351652796516426,
+            -14.127917803292119,
+            -15.882175616984732,
+            -17.334987957088494,
+            -18.77056847524416,
+            -20.138944583975295,
+            -21.206646748466994,
+            -22.08638307535155,
+            -23.160701937242337,
+            -23.70820262197679,
+            -24.031770848421935,
+            -24.440085611884655
+          ],
+          "LMMSE_Wiener_frequency_interpolation": [
+            -13.431623252320438,
+            -15.263764827192194,
+            -16.98235004002397,
+            -18.50717803142064,
+            -20.13530682206121,
+            -21.704226857881846,
+            -23.30289661047621,
+            -24.882983575391588,
+            -26.60710739731338,
+            -28.43705013641664,
+            -30.26722092542194,
+            -32.14130178838382,
+            -33.73794463275877,
+            -35.624517172456926,
+            -37.766834742369376,
+            -39.37802481757682
+          ],
+          "x_label": "SNR (dB)",
+          "y_label": "NMSE on non-pilot tones (dB)"
+        },
+        "metric_ci95": {
+          "LS_linear_interpolation_low": [
+            -2.5906417702929208,
+            -4.589487857218292,
+            -6.546775815711057,
+            -8.453151635363112,
+            -10.500973764850196,
+            -12.38982272594167,
+            -14.3436581145299,
+            -16.11654699445563,
+            -17.954512031978314,
+            -19.73396614054959,
+            -21.293711646221823,
+            -22.783453517560524,
+            -24.263363719304056,
+            -25.47579234559787,
+            -26.346160816460568,
+            -27.247394275360616
+          ],
+          "LS_linear_interpolation_high": [
+            -2.3808458112555533,
+            -4.370466647821076,
+            -6.3214493338467745,
+            -8.250672052364637,
+            -10.271349961179057,
+            -12.160225621243423,
+            -14.121831258024931,
+            -15.875238563891697,
+            -17.647036471347047,
+            -19.442263185881508,
+            -20.917116488915568,
+            -22.384975013587855,
+            -23.787926257637682,
+            -24.922987294049722,
+            -25.698432269478815,
+            -26.51733193758061
+          ],
+          "LS_spline_interpolation_low": [
+            -1.022297613254367,
+            -3.0310477694668885,
+            -4.995128795845442,
+            -6.898782438634354,
+            -8.98138092789083,
+            -10.855618404767831,
+            -12.865061842383396,
+            -14.662792567825912,
+            -16.50193943140539,
+            -18.335996407975863,
+            -19.952473896508355,
+            -21.55335669332665,
+            -23.064148640956486,
+            -24.4079719962992,
+            -25.363241432926408,
+            -26.363545570232784
+          ],
+          "LS_spline_interpolation_high": [
+            -0.8263334047712854,
+            -2.825994322247503,
+            -4.786835791090521,
+            -6.71060875343783,
+            -8.76823915503937,
+            -10.645242342697589,
+            -12.655857681745166,
+            -14.441287251868621,
+            -16.225326602701855,
+            -18.07197734578564,
+            -19.612174443446218,
+            -21.189287145782103,
+            -22.63501301676528,
+            -23.89434714719697,
+            -24.759939938211296,
+            -25.67558773483331
+          ],
+          "DFT_truncated_LS_low": [
+            -4.887013727882826,
+            -6.842690330911817,
+            -8.782380754075033,
+            -10.616914967923698,
+            -12.517145613269673,
+            -14.28983831257137,
+            -16.055583573753484,
+            -17.525405597989298,
+            -19.006598742590395,
+            -20.374249396084107,
+            -21.495530487245105,
+            -22.401049708042972,
+            -23.511219861334215,
+            -24.08380916258133,
+            -24.4604517212786,
+            -24.890948045903166
+          ],
+          "DFT_truncated_LS_high": [
+            -4.6071817305633385,
+            -6.546772466388684,
+            -8.493982786428768,
+            -10.330161449882976,
+            -12.186159979763179,
+            -13.965997294012869,
+            -15.708767660215981,
+            -17.14457031618769,
+            -18.534538207897928,
+            -19.903639771866484,
+            -20.917763009688883,
+            -21.771716442660125,
+            -22.810184013150458,
+            -23.332596081372248,
+            -23.603089975565272,
+            -23.989223177866144
+          ],
+          "LMMSE_Wiener_frequency_interpolation_low": [
+            -13.797680605701064,
+            -15.65096190483875,
+            -17.38223255401051,
+            -18.858312677083642,
+            -20.460127658512164,
+            -22.03288784755483,
+            -23.621947561215453,
+            -25.17953211468372,
+            -26.919329604157166,
+            -28.735980108547793,
+            -30.54865080250122,
+            -32.41946880147347,
+            -34.01754649363433,
+            -35.91573121854763,
+            -38.040433096728556,
+            -39.64420609234138
+          ],
+          "LMMSE_Wiener_frequency_interpolation_high": [
+            -13.065565898939813,
+            -14.876567749545638,
+            -16.58246752603743,
+            -18.156043385757638,
+            -19.810485985610256,
+            -21.375565868208863,
+            -22.983845659736968,
+            -24.586435036099456,
+            -26.294885190469596,
+            -28.13812016428549,
+            -29.985791048342662,
+            -31.863134775294174,
+            -33.45834277188321,
+            -35.333303126366225,
+            -37.493236388010196,
+            -39.11184354281227
+          ]
+        },
+        "runtime_ms_per_symbol": {
+          "LS_linear_interpolation": 0.008126208602334373,
+          "LS_spline_interpolation": 0.20647377151908586,
+          "DFT_truncated_LS": 0.011085179161455017,
+          "LMMSE_Wiener_frequency_interpolation": 0.3502980851699249
+        },
+        "complexity_flops_per_symbol": {
+          "LS_linear_interpolation": 512.0,
+          "LS_spline_interpolation": 1600.0,
+          "DFT_truncated_LS": 3840.0,
+          "LMMSE_Wiener_frequency_interpolation": 133802.66666666666
+        },
+        "nmse_gain_over_ls_linear_dB": {
+          "DFT_truncated_LS": [
+            2.261353938448845,
+            2.2147541461305664,
+            2.204069195472985,
+            2.1216263650394627,
+            1.9654909335017994,
+            1.8528936296995724,
+            1.6494309307073163,
+            1.33909517791483,
+            0.9697942235814807,
+            0.550829920759746,
+            0.10123268089829907,
+            -0.4978311902226409,
+            -0.8649430512285328,
+            -1.4911871978470082,
+            -1.990525694547756,
+            -2.4422774945859587
+          ],
+          "LMMSE_Wiener_frequency_interpolation": [
+            10.945879461546202,
+            10.783787574672509,
+            10.548237465245055,
+            10.155266187556766,
+            9.749144959046584,
+            9.429202684289299,
+            9.070151924198795,
+            8.887090796217924,
+            8.8063331456507,
+            8.848935473201092,
+            9.161806857853247,
+            9.557087522809631,
+            9.7122996442879,
+            10.42512735263313,
+            11.744538199399685,
+            12.495661711106209
+          ]
+        },
+        "dft_truncation_sensitivity_curves": {
+          "x": [
+            0.0,
+            2.0,
+            4.0,
+            6.0,
+            8.0,
+            10.0,
+            12.0,
+            14.0,
+            16.0,
+            18.0,
+            20.0,
+            22.0,
+            24.0,
+            26.0,
+            28.0,
+            30.0
+          ],
+          "DFT_Lt4": [
+            -6.754184036605136,
+            -8.599516506667493,
+            -10.487090202439507,
+            -12.324606872687864,
+            -14.102124771001323,
+            -15.825905163958083,
+            -17.3914758153792,
+            -18.66029643311237,
+            -20.028660912679914,
+            -21.147681908906204,
+            -22.05758665083066,
+            -22.731981973456662,
+            -23.728593428587992,
+            -24.07262530623311,
+            -24.327163251525228,
+            -24.606888451221216
+          ],
+          "DFT_Lt8": [
+            -4.747097729223082,
+            -6.694731398650251,
+            -8.6381817702519,
+            -10.473538208903337,
+            -12.351652796516426,
+            -14.127917803292119,
+            -15.882175616984732,
+            -17.334987957088494,
+            -18.77056847524416,
+            -20.138944583975295,
+            -21.206646748466994,
+            -22.08638307535155,
+            -23.160701937242337,
+            -23.70820262197679,
+            -24.031770848421935,
+            -24.440085611884655
+          ],
+          "DFT_Lt12": [
+            -4.4414552714665225,
+            -6.382637564760567,
+            -8.334818848037504,
+            -10.186181548566164,
+            -12.080789813169314,
+            -13.840253272534126,
+            -15.626813194449158,
+            -17.089053682178985,
+            -18.552566974575885,
+            -19.924398296755683,
+            -21.013727924316218,
+            -21.921191424984585,
+            -23.003419993258298,
+            -23.57677800230981,
+            -23.91554421997763,
+            -24.326177019335258
+          ],
+          "DFT_Lt16": [
+            -4.4292244857881595,
+            -6.370524113540541,
+            -8.322529032984017,
+            -10.172035870208656,
+            -12.066121164715314,
+            -13.823317923713349,
+            -15.609149657510294,
+            -17.06894285870646,
+            -18.530096838733524,
+            -19.89881557981024,
+            -20.984782373043394,
+            -21.88902218761491,
+            -22.968562931677152,
+            -23.53895546135424,
+            -23.875032770524413,
+            -24.283336357229455
+          ],
+          "x_label": "SNR (dB)",
+          "y_label": "NMSE (dB)"
+        },
+        "snapshot_sensitivity": {
+          "x": [
+            8,
+            16,
+            32
+          ],
+          "proposed": [
+            -22.356192064997316,
+            -24.808858835614434,
+            -27.460406249356872
+          ],
+          "baseline_name": [
+            -15.844186470892051,
+            -16.51341203651241,
+            -17.623186373862495
+          ],
+          "x_label": "Number of pilots (fixed SNR=15 dB)",
+          "y_label": "NMSE (dB)"
+        },
+        "delay_domain_example": {
+          "n": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23,
+            24,
+            25,
+            26,
+            27,
+            28,
+            29,
+            30,
+            31,
+            32,
+            33,
+            34,
+            35,
+            36,
+            37,
+            38,
+            39,
+            40,
+            41,
+            42,
+            43,
+            44,
+            45,
+            46,
+            47,
+            48,
+            49,
+            50,
+            51,
+            52,
+            53,
+            54,
+            55,
+            56,
+            57,
+            58,
+            59,
+            60,
+            61,
+            62,
+            63
+          ],
+          "true_delay_taps": [
+            0.5365698492764226,
+            0.032632075705334614,
+            0.015569887663238656,
+            0.010240495414049764,
+            0.00764286383299479,
+            0.0061081677583797265,
+            0.005096969956616405,
+            0.004382080323890599,
+            0.00385119786183617,
+            0.003442444103271865,
+            0.0031189251911285685,
+            0.0028572828484623577,
+            0.002642012868434038,
+            0.0024624240629127986,
+            0.0023109089745694126,
+            0.0021819105405731496,
+            0.002071278531854481,
+            0.001975854437529268,
+            0.0018931955261675066,
+            0.0018213865822311653,
+            0.0017589085119204628,
+            0.0017045448015909057,
+            0.0016573137590951352,
+            0.0016164186873262277,
+            0.001581210771101821,
+            0.0015511611406679121,
+            0.0015258396743399753,
+            0.0015048988361041767,
+            0.0014880613429349352,
+            0.001475110802788003,
+            0.0014658847094981772,
+            0.0014602693587483016,
+            0.001458196382212075,
+            0.001459640700200407,
+            0.001464619777561596,
+            0.0014731941414579907,
+            0.0014854691897823145,
+            0.0015015983917079567,
+            0.0015217880638552133,
+            0.001546304004718904,
+            0.0015754803966679424,
+            0.001609731553338181,
+            0.0016495673214179825,
+            0.0016956132708511608,
+            0.0017486372742158542,
+            0.0018095847596346422,
+            0.0018796259426440121,
+            0.001960219899077848,
+            0.002053202766545,
+            0.002160911232750316,
+            0.002286358810755139,
+            0.002433493102524001,
+            0.002607580918993245,
+            0.002815801940809736,
+            0.003068195583919362,
+            0.003379233064836757,
+            0.0037705556556877234,
+            0.004276030606933464,
+            0.004951788999635545,
+            0.005898097776134415,
+            0.007313323213818457,
+            0.009652699318410793,
+            0.014243015190260631,
+            0.027282137958024526
+          ],
+          "ifft_of_ls_linear": [
+            0.5562489413022391,
+            0.015679985885845828,
+            0.01449007255207391,
+            0.03853205336694741,
+            0.01816492015569119,
+            0.012036785222303852,
+            0.005866360417246554,
+            0.0062481607806985345,
+            0.0069097386370398995,
+            0.004782353376922573,
+            0.007283436219667949,
+            0.005039651736511751,
+            0.001122169402844698,
+            0.0007779495818201461,
+            0.0007664049193594891,
+            0.00014366498559170924,
+            0.0,
+            6.876342366912592e-05,
+            0.00023297208244080613,
+            0.0012859001666669838,
+            0.0010000280481998803,
+            0.0009659450403743309,
+            0.0006355611431136949,
+            0.0008677637118738249,
+            0.0011855237252092784,
+            0.0009861535270643128,
+            0.0017674199125007918,
+            0.0014155620660905265,
+            0.00036007127908095334,
+            0.0002821357036082908,
+            0.00031143544075676533,
+            6.494804857224763e-05,
+            0.0,
+            3.784282067073142e-05,
+            0.00014056176799146191,
+            0.0008478425485100842,
+            0.0007187155904410827,
+            0.0007552326482968936,
+            0.0005398178538428484,
+            0.0007999203728537354,
+            0.0011855237252092754,
+            0.0010697917869873595,
+            0.0020808934197976687,
+            0.0018105085368934546,
+            0.0005010067726667276,
+            0.0004279076922126026,
+            0.0005161841958574363,
+            0.00011801578479879973,
+            0.0,
+            8.37082623100289e-05,
+            0.0003459054955362757,
+            0.0023378067632960644,
+            0.002239891632009656,
+            0.0026887620250883528,
+            0.002224558454328667,
+            0.0038792153466959424,
+            0.006909738637039904,
+            0.007702823931798322,
+            0.01920707538948185,
+            0.02256101692213138,
+            0.00910049277051164,
+            0.012822272257107066,
+            0.03210490445827858,
+            0.02691090322751027
+          ],
+          "after_truncation": [
+            0.5562489413022391,
+            0.015679985885845828,
+            0.01449007255207391,
+            0.03853205336694741,
+            0.01816492015569119,
+            0.012036785222303852,
+            0.005866360417246554,
+            0.0062481607806985345,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        "robustness": {
+          "channel_mismatch": {
+            "metric_curve": {
+              "x": [
+                0.0,
+                2.0,
+                4.0,
+                6.0,
+                8.0,
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,
+                28.0,
+                30.0
+              ],
+              "LS_linear_interpolation": [
+                -2.485743790774237,
+                -4.479977252519684,
+                -6.434112574778916,
+                -8.351911843863874,
+                -10.386161863014626,
+                -12.275024173592547,
+                -14.232744686277416,
+                -15.995892779173664,
+                -17.80077425166268,
+                -19.58811466321555,
+                -21.105414067568695,
+                -22.58421426557419,
+                -24.02564498847087,
+                -25.199389819823796,
+                -26.02229654296969,
+                -26.882363106470613
+              ],
+              "LS_spline_interpolation": [
+                -0.9243155090128262,
+                -2.9285210458571957,
+                -4.890982293467982,
+                -6.804695596036092,
+                -8.8748100414651,
+                -10.75043037373271,
+                -12.760459762064281,
+                -14.552039909847267,
+                -16.363633017053623,
+                -18.20398687688075,
+                -19.782324169977286,
+                -21.371321919554376,
+                -22.849580828860883,
+                -24.151159571748085,
+                -25.061590685568852,
+                -26.019566652533047
+              ],
+              "DFT_truncated_LS": [
+                -4.747097729223082,
+                -6.694731398650251,
+                -8.6381817702519,
+                -10.473538208903337,
+                -12.351652796516426,
+                -14.127917803292119,
+                -15.882175616984732,
+                -17.334987957088494,
+                -18.77056847524416,
+                -20.138944583975295,
+                -21.206646748466994,
+                -22.08638307535155,
+                -23.160701937242337,
+                -23.70820262197679,
+                -24.031770848421935,
+                -24.440085611884655
+              ],
+              "LMMSE_Wiener_frequency_interpolation": [
+                -13.431623252320438,
+                -15.263764827192194,
+                -16.98235004002397,
+                -18.50717803142064,
+                -20.13530682206121,
+                -21.704226857881846,
+                -23.30289661047621,
+                -24.882983575391588,
+                -26.60710739731338,
+                -28.43705013641664,
+                -30.26722092542194,
+                -32.14130178838382,
+                -33.73794463275877,
+                -35.624517172456926,
+                -37.766834742369376,
+                -39.37802481757682
+              ],
+              "x_label": "SNR (dB)",
+              "y_label": "NMSE on non-pilot tones (dB)"
+            },
+            "metric_ci95": {
+              "LS_linear_interpolation_low": [
+                -2.5906417702929208,
+                -4.589487857218292,
+                -6.546775815711057,
+                -8.453151635363112,
+                -10.500973764850196,
+                -12.38982272594167,
+                -14.3436581145299,
+                -16.11654699445563,
+                -17.954512031978314,
+                -19.73396614054959,
+                -21.293711646221823,
+                -22.783453517560524,
+                -24.263363719304056,
+                -25.47579234559787,
+                -26.346160816460568,
+                -27.247394275360616
+              ],
+              "LS_linear_interpolation_high": [
+                -2.3808458112555533,
+                -4.370466647821076,
+                -6.3214493338467745,
+                -8.250672052364637,
+                -10.271349961179057,
+                -12.160225621243423,
+                -14.121831258024931,
+                -15.875238563891697,
+                -17.647036471347047,
+                -19.442263185881508,
+                -20.917116488915568,
+                -22.384975013587855,
+                -23.787926257637682,
+                -24.922987294049722,
+                -25.698432269478815,
+                -26.51733193758061
+              ],
+              "LS_spline_interpolation_low": [
+                -1.022297613254367,
+                -3.0310477694668885,
+                -4.995128795845442,
+                -6.898782438634354,
+                -8.98138092789083,
+                -10.855618404767831,
+                -12.865061842383396,
+                -14.662792567825912,
+                -16.50193943140539,
+                -18.335996407975863,
+                -19.952473896508355,
+                -21.55335669332665,
+                -23.064148640956486,
+                -24.4079719962992,
+                -25.363241432926408,
+                -26.363545570232784
+              ],
+              "LS_spline_interpolation_high": [
+                -0.8263334047712854,
+                -2.825994322247503,
+                -4.786835791090521,
+                -6.71060875343783,
+                -8.76823915503937,
+                -10.645242342697589,
+                -12.655857681745166,
+                -14.441287251868621,
+                -16.225326602701855,
+                -18.07197734578564,
+                -19.612174443446218,
+                -21.189287145782103,
+                -22.63501301676528,
+                -23.89434714719697,
+                -24.759939938211296,
+                -25.67558773483331
+              ],
+              "DFT_truncated_LS_low": [
+                -4.887013727882826,
+                -6.842690330911817,
+                -8.782380754075033,
+                -10.616914967923698,
+                -12.517145613269673,
+                -14.28983831257137,
+                -16.055583573753484,
+                -17.525405597989298,
+                -19.006598742590395,
+                -20.374249396084107,
+                -21.495530487245105,
+                -22.401049708042972,
+                -23.511219861334215,
+                -24.08380916258133,
+                -24.4604517212786,
+                -24.890948045903166
+              ],
+              "DFT_truncated_LS_high": [
+                -4.6071817305633385,
+                -6.546772466388684,
+                -8.493982786428768,
+                -10.330161449882976,
+                -12.186159979763179,
+                -13.965997294012869,
+                -15.708767660215981,
+                -17.14457031618769,
+                -18.534538207897928,
+                -19.903639771866484,
+                -20.917763009688883,
+                -21.771716442660125,
+                -22.810184013150458,
+                -23.332596081372248,
+                -23.603089975565272,
+                -23.989223177866144
+              ],
+              "LMMSE_Wiener_frequency_interpolation_low": [
+                -13.797680605701064,
+                -15.65096190483875,
+                -17.38223255401051,
+                -18.858312677083642,
+                -20.460127658512164,
+                -22.03288784755483,
+                -23.621947561215453,
+                -25.17953211468372,
+                -26.919329604157166,
+                -28.735980108547793,
+                -30.54865080250122,
+                -32.41946880147347,
+                -34.01754649363433,
+                -35.91573121854763,
+                -38.040433096728556,
+                -39.64420609234138
+              ],
+              "LMMSE_Wiener_frequency_interpolation_high": [
+                -13.065565898939813,
+                -14.876567749545638,
+                -16.58246752603743,
+                -18.156043385757638,
+                -19.810485985610256,
+                -21.375565868208863,
+                -22.983845659736968,
+                -24.586435036099456,
+                -26.294885190469596,
+                -28.13812016428549,
+                -29.985791048342662,
+                -31.863134775294174,
+                -33.45834277188321,
+                -35.333303126366225,
+                -37.493236388010196,
+                -39.11184354281227
+              ]
+            },
+            "runtime_ms_per_symbol": {
+              "LS_linear_interpolation": 0.008094050164800137,
+              "LS_spline_interpolation": 0.20512895486172056,
+              "DFT_truncated_LS": 0.010830196144524962,
+              "LMMSE_Wiener_frequency_interpolation": 0.3515995277557522
+            },
+            "complexity_flops_per_symbol": {
+              "LS_linear_interpolation": 512.0,
+              "LS_spline_interpolation": 1600.0,
+              "DFT_truncated_LS": 3840.0,
+              "LMMSE_Wiener_frequency_interpolation": 133802.66666666666
+            },
+            "nmse_gain_over_ls_linear_dB": {
+              "DFT_truncated_LS": [
+                2.261353938448845,
+                2.2147541461305664,
+                2.204069195472985,
+                2.1216263650394627,
+                1.9654909335017994,
+                1.8528936296995724,
+                1.6494309307073163,
+                1.33909517791483,
+                0.9697942235814807,
+                0.550829920759746,
+                0.10123268089829907,
+                -0.4978311902226409,
+                -0.8649430512285328,
+                -1.4911871978470082,
+                -1.990525694547756,
+                -2.4422774945859587
+              ],
+              "LMMSE_Wiener_frequency_interpolation": [
+                10.945879461546202,
+                10.783787574672509,
+                10.548237465245055,
+                10.155266187556766,
+                9.749144959046584,
+                9.429202684289299,
+                9.070151924198795,
+                8.887090796217924,
+                8.8063331456507,
+                8.848935473201092,
+                9.161806857853247,
+                9.557087522809631,
+                9.7122996442879,
+                10.42512735263313,
+                11.744538199399685,
+                12.495661711106209
+              ]
+            },
+            "dft_truncation_sensitivity_curves": {
+              "x": [
+                0.0,
+                2.0,
+                4.0,
+                6.0,
+                8.0,
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,
+                28.0,
+                30.0
+              ],
+              "DFT_Lt4": [
+                -6.754184036605136,
+                -8.599516506667493,
+                -10.487090202439507,
+                -12.324606872687864,
+                -14.102124771001323,
+                -15.825905163958083,
+                -17.3914758153792,
+                -18.66029643311237,
+                -20.028660912679914,
+                -21.147681908906204,
+                -22.05758665083066,
+                -22.731981973456662,
+                -23.728593428587992,
+                -24.07262530623311,
+                -24.327163251525228,
+                -24.606888451221216
+              ],
+              "DFT_Lt8": [
+                -4.747097729223082,
+                -6.694731398650251,
+                -8.6381817702519,
+                -10.473538208903337,
+                -12.351652796516426,
+                -14.127917803292119,
+                -15.882175616984732,
+                -17.334987957088494,
+                -18.77056847524416,
+                -20.138944583975295,
+                -21.206646748466994,
+                -22.08638307535155,
+                -23.160701937242337,
+                -23.70820262197679,
+                -24.031770848421935,
+                -24.440085611884655
+              ],
+              "DFT_Lt12": [
+                -4.4414552714665225,
+                -6.382637564760567,
+                -8.334818848037504,
+                -10.186181548566164,
+                -12.080789813169314,
+                -13.840253272534126,
+                -15.626813194449158,
+                -17.089053682178985,
+                -18.552566974575885,
+                -19.924398296755683,
+                -21.013727924316218,
+                -21.921191424984585,
+                -23.003419993258298,
+                -23.57677800230981,
+                -23.91554421997763,
+                -24.326177019335258
+              ],
+              "DFT_Lt16": [
+                -4.4292244857881595,
+                -6.370524113540541,
+                -8.322529032984017,
+                -10.172035870208656,
+                -12.066121164715314,
+                -13.823317923713349,
+                -15.609149657510294,
+                -17.06894285870646,
+                -18.530096838733524,
+                -19.89881557981024,
+                -20.984782373043394,
+                -21.88902218761491,
+                -22.968562931677152,
+                -23.53895546135424,
+                -23.875032770524413,
+                -24.283336357229455
+              ],
+              "x_label": "SNR (dB)",
+              "y_label": "NMSE (dB)"
+            },
+            "snapshot_sensitivity": {
+              "x": [
+                8,
+                16,
+                32
+              ],
+              "proposed": [
+                -22.356192064997316,
+                -24.808858835614434,
+                -27.460406249356872
+              ],
+              "baseline_name": [
+                -15.844186470892051,
+                -16.51341203651241,
+                -17.623186373862495
+              ],
+              "x_label": "Number of pilots (fixed SNR=15 dB)",
+              "y_label": "NMSE (dB)"
+            },
+            "delay_domain_example": {
+              "n": [
+                0,
+                1,
+                2,
+                3,
+                4,
+                5,
+                6,
+                7,
+                8,
+                9,
+                10,
+                11,
+                12,
+                13,
+                14,
+                15,
+                16,
+                17,
+                18,
+                19,
+                20,
+                21,
+                22,
+                23,
+                24,
+                25,
+                26,
+                27,
+                28,
+                29,
+                30,
+                31,
+                32,
+                33,
+                34,
+                35,
+                36,
+                37,
+                38,
+                39,
+                40,
+                41,
+                42,
+                43,
+                44,
+                45,
+                46,
+                47,
+                48,
+                49,
+                50,
+                51,
+                52,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                60,
+                61,
+                62,
+                63
+              ],
+              "true_delay_taps": [
+                0.5365698492764226,
+                0.032632075705334614,
+                0.015569887663238656,
+                0.010240495414049764,
+                0.00764286383299479,
+                0.0061081677583797265,
+                0.005096969956616405,
+                0.004382080323890599,
+                0.00385119786183617,
+                0.003442444103271865,
+                0.0031189251911285685,
+                0.0028572828484623577,
+                0.002642012868434038,
+                0.0024624240629127986,
+                0.0023109089745694126,
+                0.0021819105405731496,
+                0.002071278531854481,
+                0.001975854437529268,
+                0.0018931955261675066,
+                0.0018213865822311653,
+                0.0017589085119204628,
+                0.0017045448015909057,
+                0.0016573137590951352,
+                0.0016164186873262277,
+                0.001581210771101821,
+                0.0015511611406679121,
+                0.0015258396743399753,
+                0.0015048988361041767,
+                0.0014880613429349352,
+                0.001475110802788003,
+                0.0014658847094981772,
+                0.0014602693587483016,
+                0.001458196382212075,
+                0.001459640700200407,
+                0.001464619777561596,
+                0.0014731941414579907,
+                0.0014854691897823145,
+                0.0015015983917079567,
+                0.0015217880638552133,
+                0.001546304004718904,
+                0.0015754803966679424,
+                0.001609731553338181,
+                0.0016495673214179825,
+                0.0016956132708511608,
+                0.0017486372742158542,
+                0.0018095847596346422,
+                0.0018796259426440121,
+                0.001960219899077848,
+                0.002053202766545,
+                0.002160911232750316,
+                0.002286358810755139,
+                0.002433493102524001,
+                0.002607580918993245,
+                0.002815801940809736,
+                0.003068195583919362,
+                0.003379233064836757,
+                0.0037705556556877234,
+                0.004276030606933464,
+                0.004951788999635545,
+                0.005898097776134415,
+                0.007313323213818457,
+                0.009652699318410793,
+                0.014243015190260631,
+                0.027282137958024526
+              ],
+              "ifft_of_ls_linear": [
+                0.5562489413022391,
+                0.015679985885845828,
+                0.01449007255207391,
+                0.03853205336694741,
+                0.01816492015569119,
+                0.012036785222303852,
+                0.005866360417246554,
+                0.0062481607806985345,
+                0.0069097386370398995,
+                0.004782353376922573,
+                0.007283436219667949,
+                0.005039651736511751,
+                0.001122169402844698,
+                0.0007779495818201461,
+                0.0007664049193594891,
+                0.00014366498559170924,
+                0.0,
+                6.876342366912592e-05,
+                0.00023297208244080613,
+                0.0012859001666669838,
+                0.0010000280481998803,
+                0.0009659450403743309,
+                0.0006355611431136949,
+                0.0008677637118738249,
+                0.0011855237252092784,
+                0.0009861535270643128,
+                0.0017674199125007918,
+                0.0014155620660905265,
+                0.00036007127908095334,
+                0.0002821357036082908,
+                0.00031143544075676533,
+                6.494804857224763e-05,
+                0.0,
+                3.784282067073142e-05,
+                0.00014056176799146191,
+                0.0008478425485100842,
+                0.0007187155904410827,
+                0.0007552326482968936,
+                0.0005398178538428484,
+                0.0007999203728537354,
+                0.0011855237252092754,
+                0.0010697917869873595,
+                0.0020808934197976687,
+                0.0018105085368934546,
+                0.0005010067726667276,
+                0.0004279076922126026,
+                0.0005161841958574363,
+                0.00011801578479879973,
+                0.0,
+                8.37082623100289e-05,
+                0.0003459054955362757,
+                0.0023378067632960644,
+                0.002239891632009656,
+                0.0026887620250883528,
+                0.002224558454328667,
+                0.0038792153466959424,
+                0.006909738637039904,
+                0.007702823931798322,
+                0.01920707538948185,
+                0.02256101692213138,
+                0.00910049277051164,
+                0.012822272257107066,
+                0.03210490445827858,
+                0.02691090322751027
+              ],
+              "after_truncation": [
+                0.5562489413022391,
+                0.015679985885845828,
+                0.01449007255207391,
+                0.03853205336694741,
+                0.01816492015569119,
+                0.012036785222303852,
+                0.005866360417246554,
+                0.0062481607806985345,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          },
+          "channel_override": "3GPP_TDL-C"
+        }
+      },
+      "algorithm": "Comparative OFDM CFR estimation: LS-linear/spline, DFT-truncated LS, LMMSE-Wiener",
+      "elapsed_sec": 6.905048375017941,
+      "execution_time": 15.827423095703125,
+      "eval_config": {
+        "variable_points": [
+          0,
+          2,
+          4,
+          6,
+          8,
+          10,
+          12,
+          14,
+          16,
+          18,
+          20,
+          22,
+          24,
+          26,
+          28,
+          30
+        ],
+        "num_trials": 500,
+        "primary_metrics": [
+          "NMSE_dB_nonpilot",
+          "CI95_linear_nmse"
+        ],
+        "baseline_methods": [
+          "LS_linear_interpolation",
+          "LS_spline_interpolation",
+          "DFT_truncated_LS",
+          "LMMSE_Wiener_frequency_interpolation"
+        ],
+        "system_model": {
+          "waveform": "OFDM",
+          "antenna_config": {
+            "num_tx": 1,
+            "num_rx": 1,
+            "array_type": "single_antenna",
+            "additional_elements": {}
+          },
+          "channel_model": "3GPP_TDL-A",
+          "operating_conditions": {
+            "carrier_freq_ghz": 3.5,
+            "bandwidth_mhz": 0.96,
+            "mobility_kmh": 3
+          },
+          "additional_params": {
+            "num_subcarriers": 64,
+            "subcarrier_spacing_khz": 15,
+            "cp_length_samples": 16,
+            "num_pilot_subcarriers": 16,
+            "num_data_subcarriers": 48,
+            "pilot_pattern": "uniform_comb_every_4_subcarriers",
+            "rms_delay_spread_ns": 30,
+            "snr_sweep_db": {
+              "start": 0,
+              "stop": 30,
+              "step": 2
+            },
+            "required_estimation_approaches": [
+              {
+                "name": "LS_plus_piecewise_linear_or_spline_interpolation",
+                "tradeoff": "lowest_complexity_reference"
+              },
+              {
+                "name": "DFT_based_delay_domain_truncation_after_LS_interpolation",
+                "tradeoff": "moderate_complexity_improved_noise_rejection"
+              },
+              {
+                "name": "LMMSE_Wiener_frequency_interpolation_using_TDL_covariance",
+                "tradeoff": "higher_complexity_best_expected_nmse"
+              }
+            ],
+            "required_outputs": [
+              "NMSE_vs_SNR_curves_for_each_approach",
+              "95pct_confidence_intervals_or_std_bands_over_trials",
+              "interpolation_or_reconstruction_strategy_for_non_pilot_subcarriers",
+              "complexity_and_runtime_comparison_per_OFDM_symbol"
+            ],
+            "pilot_symbol_model": "known_unit_modulus",
+            "virtual_carriers_present": false,
+            "monte_carlo_trials_per_snr": 500
+          },
+          "channel_properties": [
+            "frequency_selective",
+            "multipath_fading",
+            "WSSUS_approx",
+            "pilot-correlated_in_frequency",
+            "delay_domain_compressible",
+            "quasi_static_within_OFDM_symbol"
+          ],
+          "carrier_freq_ghz": 3.5,
+          "bandwidth_mhz": 0.96,
+          "mobility_kmh": 3
+        },
+        "performance_targets": {
+          "primary_metric": "NMSE_dB",
+          "secondary_metrics": [
+            "complexity_flops",
+            "runtime_per_OFDM_symbol_ms",
+            "nmse_gain_over_ls_linear_dB"
+          ],
+          "theoretical_bound": "LMMSE_lower_bound_given_second_order_statistics",
+          "baseline_algorithms": [
+            "LS_linear_interpolation",
+            "LS_spline_interpolation",
+            "DFT_truncated_LS",
+            "LMMSE_Wiener_frequency_interpolation"
+          ],
+          "target_value": null
+        },
+        "constraints": {
+          "complexity": "Include at least one interpolation-only low-complexity method with no large matrix inversion, and at least one covariance/model-aided method; any explicit inversion must be dimension <= 16x16 (pilot-domain).",
+          "data_availability": "synthetic_only",
+          "implementation": "classical_numpy_fft_linear_algebra"
+        }
+      },
+      "raw_results": {
+        "algorithm": "Comparative OFDM CFR estimation: LS-linear/spline, DFT-truncated LS, LMMSE-Wiener",
+        "elapsed_sec": 6.905048375017941,
+        "performance_data": {
+          "metric_curve": {
+            "x": [
+              0.0,
+              2.0,
+              4.0,
+              6.0,
+              8.0,
+              10.0,
+              12.0,
+              14.0,
+              16.0,
+              18.0,
+              20.0,
+              22.0,
+              24.0,
+              26.0,
+              28.0,
+              30.0
+            ],
+            "LS_linear_interpolation": [
+              -2.485743790774237,
+              -4.479977252519684,
+              -6.434112574778916,
+              -8.351911843863874,
+              -10.386161863014626,
+              -12.275024173592547,
+              -14.232744686277416,
+              -15.995892779173664,
+              -17.80077425166268,
+              -19.58811466321555,
+              -21.105414067568695,
+              -22.58421426557419,
+              -24.02564498847087,
+              -25.199389819823796,
+              -26.02229654296969,
+              -26.882363106470613
+            ],
+            "LS_spline_interpolation": [
+              -0.9243155090128262,
+              -2.9285210458571957,
+              -4.890982293467982,
+              -6.804695596036092,
+              -8.8748100414651,
+              -10.75043037373271,
+              -12.760459762064281,
+              -14.552039909847267,
+              -16.363633017053623,
+              -18.20398687688075,
+              -19.782324169977286,
+              -21.371321919554376,
+              -22.849580828860883,
+              -24.151159571748085,
+              -25.061590685568852,
+              -26.019566652533047
+            ],
+            "DFT_truncated_LS": [
+              -4.747097729223082,
+              -6.694731398650251,
+              -8.6381817702519,
+              -10.473538208903337,
+              -12.351652796516426,
+              -14.127917803292119,
+              -15.882175616984732,
+              -17.334987957088494,
+              -18.77056847524416,
+              -20.138944583975295,
+              -21.206646748466994,
+              -22.08638307535155,
+              -23.160701937242337,
+              -23.70820262197679,
+              -24.031770848421935,
+              -24.440085611884655
+            ],
+            "LMMSE_Wiener_frequency_interpolation": [
+              -13.431623252320438,
+              -15.263764827192194,
+              -16.98235004002397,
+              -18.50717803142064,
+              -20.13530682206121,
+              -21.704226857881846,
+              -23.30289661047621,
+              -24.882983575391588,
+              -26.60710739731338,
+              -28.43705013641664,
+              -30.26722092542194,
+              -32.14130178838382,
+              -33.73794463275877,
+              -35.624517172456926,
+              -37.766834742369376,
+              -39.37802481757682
+            ],
+            "x_label": "SNR (dB)",
+            "y_label": "NMSE on non-pilot tones (dB)"
+          },
+          "metric_ci95": {
+            "LS_linear_interpolation_low": [
+              -2.5906417702929208,
+              -4.589487857218292,
+              -6.546775815711057,
+              -8.453151635363112,
+              -10.500973764850196,
+              -12.38982272594167,
+              -14.3436581145299,
+              -16.11654699445563,
+              -17.954512031978314,
+              -19.73396614054959,
+              -21.293711646221823,
+              -22.783453517560524,
+              -24.263363719304056,
+              -25.47579234559787,
+              -26.346160816460568,
+              -27.247394275360616
+            ],
+            "LS_linear_interpolation_high": [
+              -2.3808458112555533,
+              -4.370466647821076,
+              -6.3214493338467745,
+              -8.250672052364637,
+              -10.271349961179057,
+              -12.160225621243423,
+              -14.121831258024931,
+              -15.875238563891697,
+              -17.647036471347047,
+              -19.442263185881508,
+              -20.917116488915568,
+              -22.384975013587855,
+              -23.787926257637682,
+              -24.922987294049722,
+              -25.698432269478815,
+              -26.51733193758061
+            ],
+            "LS_spline_interpolation_low": [
+              -1.022297613254367,
+              -3.0310477694668885,
+              -4.995128795845442,
+              -6.898782438634354,
+              -8.98138092789083,
+              -10.855618404767831,
+              -12.865061842383396,
+              -14.662792567825912,
+              -16.50193943140539,
+              -18.335996407975863,
+              -19.952473896508355,
+              -21.55335669332665,
+              -23.064148640956486,
+              -24.4079719962992,
+              -25.363241432926408,
+              -26.363545570232784
+            ],
+            "LS_spline_interpolation_high": [
+              -0.8263334047712854,
+              -2.825994322247503,
+              -4.786835791090521,
+              -6.71060875343783,
+              -8.76823915503937,
+              -10.645242342697589,
+              -12.655857681745166,
+              -14.441287251868621,
+              -16.225326602701855,
+              -18.07197734578564,
+              -19.612174443446218,
+              -21.189287145782103,
+              -22.63501301676528,
+              -23.89434714719697,
+              -24.759939938211296,
+              -25.67558773483331
+            ],
+            "DFT_truncated_LS_low": [
+              -4.887013727882826,
+              -6.842690330911817,
+              -8.782380754075033,
+              -10.616914967923698,
+              -12.517145613269673,
+              -14.28983831257137,
+              -16.055583573753484,
+              -17.525405597989298,
+              -19.006598742590395,
+              -20.374249396084107,
+              -21.495530487245105,
+              -22.401049708042972,
+              -23.511219861334215,
+              -24.08380916258133,
+              -24.4604517212786,
+              -24.890948045903166
+            ],
+            "DFT_truncated_LS_high": [
+              -4.6071817305633385,
+              -6.546772466388684,
+              -8.493982786428768,
+              -10.330161449882976,
+              -12.186159979763179,
+              -13.965997294012869,
+              -15.708767660215981,
+              -17.14457031618769,
+              -18.534538207897928,
+              -19.903639771866484,
+              -20.917763009688883,
+              -21.771716442660125,
+              -22.810184013150458,
+              -23.332596081372248,
+              -23.603089975565272,
+              -23.989223177866144
+            ],
+            "LMMSE_Wiener_frequency_interpolation_low": [
+              -13.797680605701064,
+              -15.65096190483875,
+              -17.38223255401051,
+              -18.858312677083642,
+              -20.460127658512164,
+              -22.03288784755483,
+              -23.621947561215453,
+              -25.17953211468372,
+              -26.919329604157166,
+              -28.735980108547793,
+              -30.54865080250122,
+              -32.41946880147347,
+              -34.01754649363433,
+              -35.91573121854763,
+              -38.040433096728556,
+              -39.64420609234138
+            ],
+            "LMMSE_Wiener_frequency_interpolation_high": [
+              -13.065565898939813,
+              -14.876567749545638,
+              -16.58246752603743,
+              -18.156043385757638,
+              -19.810485985610256,
+              -21.375565868208863,
+              -22.983845659736968,
+              -24.586435036099456,
+              -26.294885190469596,
+              -28.13812016428549,
+              -29.985791048342662,
+              -31.863134775294174,
+              -33.45834277188321,
+              -35.333303126366225,
+              -37.493236388010196,
+              -39.11184354281227
+            ]
+          },
+          "runtime_ms_per_symbol": {
+            "LS_linear_interpolation": 0.008126208602334373,
+            "LS_spline_interpolation": 0.20647377151908586,
+            "DFT_truncated_LS": 0.011085179161455017,
+            "LMMSE_Wiener_frequency_interpolation": 0.3502980851699249
+          },
+          "complexity_flops_per_symbol": {
+            "LS_linear_interpolation": 512.0,
+            "LS_spline_interpolation": 1600.0,
+            "DFT_truncated_LS": 3840.0,
+            "LMMSE_Wiener_frequency_interpolation": 133802.66666666666
+          },
+          "nmse_gain_over_ls_linear_dB": {
+            "DFT_truncated_LS": [
+              2.261353938448845,
+              2.2147541461305664,
+              2.204069195472985,
+              2.1216263650394627,
+              1.9654909335017994,
+              1.8528936296995724,
+              1.6494309307073163,
+              1.33909517791483,
+              0.9697942235814807,
+              0.550829920759746,
+              0.10123268089829907,
+              -0.4978311902226409,
+              -0.8649430512285328,
+              -1.4911871978470082,
+              -1.990525694547756,
+              -2.4422774945859587
+            ],
+            "LMMSE_Wiener_frequency_interpolation": [
+              10.945879461546202,
+              10.783787574672509,
+              10.548237465245055,
+              10.155266187556766,
+              9.749144959046584,
+              9.429202684289299,
+              9.070151924198795,
+              8.887090796217924,
+              8.8063331456507,
+              8.848935473201092,
+              9.161806857853247,
+              9.557087522809631,
+              9.7122996442879,
+              10.42512735263313,
+              11.744538199399685,
+              12.495661711106209
+            ]
+          },
+          "dft_truncation_sensitivity_curves": {
+            "x": [
+              0.0,
+              2.0,
+              4.0,
+              6.0,
+              8.0,
+              10.0,
+              12.0,
+              14.0,
+              16.0,
+              18.0,
+              20.0,
+              22.0,
+              24.0,
+              26.0,
+              28.0,
+              30.0
+            ],
+            "DFT_Lt4": [
+              -6.754184036605136,
+              -8.599516506667493,
+              -10.487090202439507,
+              -12.324606872687864,
+              -14.102124771001323,
+              -15.825905163958083,
+              -17.3914758153792,
+              -18.66029643311237,
+              -20.028660912679914,
+              -21.147681908906204,
+              -22.05758665083066,
+              -22.731981973456662,
+              -23.728593428587992,
+              -24.07262530623311,
+              -24.327163251525228,
+              -24.606888451221216
+            ],
+            "DFT_Lt8": [
+              -4.747097729223082,
+              -6.694731398650251,
+              -8.6381817702519,
+              -10.473538208903337,
+              -12.351652796516426,
+              -14.127917803292119,
+              -15.882175616984732,
+              -17.334987957088494,
+              -18.77056847524416,
+              -20.138944583975295,
+              -21.206646748466994,
+              -22.08638307535155,
+              -23.160701937242337,
+              -23.70820262197679,
+              -24.031770848421935,
+              -24.440085611884655
+            ],
+            "DFT_Lt12": [
+              -4.4414552714665225,
+              -6.382637564760567,
+              -8.334818848037504,
+              -10.186181548566164,
+              -12.080789813169314,
+              -13.840253272534126,
+              -15.626813194449158,
+              -17.089053682178985,
+              -18.552566974575885,
+              -19.924398296755683,
+              -21.013727924316218,
+              -21.921191424984585,
+              -23.003419993258298,
+              -23.57677800230981,
+              -23.91554421997763,
+              -24.326177019335258
+            ],
+            "DFT_Lt16": [
+              -4.4292244857881595,
+              -6.370524113540541,
+              -8.322529032984017,
+              -10.172035870208656,
+              -12.066121164715314,
+              -13.823317923713349,
+              -15.609149657510294,
+              -17.06894285870646,
+              -18.530096838733524,
+              -19.89881557981024,
+              -20.984782373043394,
+              -21.88902218761491,
+              -22.968562931677152,
+              -23.53895546135424,
+              -23.875032770524413,
+              -24.283336357229455
+            ],
+            "x_label": "SNR (dB)",
+            "y_label": "NMSE (dB)"
+          },
+          "snapshot_sensitivity": {
+            "x": [
+              8,
+              16,
+              32
+            ],
+            "proposed": [
+              -22.356192064997316,
+              -24.808858835614434,
+              -27.460406249356872
+            ],
+            "baseline_name": [
+              -15.844186470892051,
+              -16.51341203651241,
+              -17.623186373862495
+            ],
+            "x_label": "Number of pilots (fixed SNR=15 dB)",
+            "y_label": "NMSE (dB)"
+          },
+          "delay_domain_example": {
+            "n": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              10,
+              11,
+              12,
+              13,
+              14,
+              15,
+              16,
+              17,
+              18,
+              19,
+              20,
+              21,
+              22,
+              23,
+              24,
+              25,
+              26,
+              27,
+              28,
+              29,
+              30,
+              31,
+              32,
+              33,
+              34,
+              35,
+              36,
+              37,
+              38,
+              39,
+              40,
+              41,
+              42,
+              43,
+              44,
+              45,
+              46,
+              47,
+              48,
+              49,
+              50,
+              51,
+              52,
+              53,
+              54,
+              55,
+              56,
+              57,
+              58,
+              59,
+              60,
+              61,
+              62,
+              63
+            ],
+            "true_delay_taps": [
+              0.5365698492764226,
+              0.032632075705334614,
+              0.015569887663238656,
+              0.010240495414049764,
+              0.00764286383299479,
+              0.0061081677583797265,
+              0.005096969956616405,
+              0.004382080323890599,
+              0.00385119786183617,
+              0.003442444103271865,
+              0.0031189251911285685,
+              0.0028572828484623577,
+              0.002642012868434038,
+              0.0024624240629127986,
+              0.0023109089745694126,
+              0.0021819105405731496,
+              0.002071278531854481,
+              0.001975854437529268,
+              0.0018931955261675066,
+              0.0018213865822311653,
+              0.0017589085119204628,
+              0.0017045448015909057,
+              0.0016573137590951352,
+              0.0016164186873262277,
+              0.001581210771101821,
+              0.0015511611406679121,
+              0.0015258396743399753,
+              0.0015048988361041767,
+              0.0014880613429349352,
+              0.001475110802788003,
+              0.0014658847094981772,
+              0.0014602693587483016,
+              0.001458196382212075,
+              0.001459640700200407,
+              0.001464619777561596,
+              0.0014731941414579907,
+              0.0014854691897823145,
+              0.0015015983917079567,
+              0.0015217880638552133,
+              0.001546304004718904,
+              0.0015754803966679424,
+              0.001609731553338181,
+              0.0016495673214179825,
+              0.0016956132708511608,
+              0.0017486372742158542,
+              0.0018095847596346422,
+              0.0018796259426440121,
+              0.001960219899077848,
+              0.002053202766545,
+              0.002160911232750316,
+              0.002286358810755139,
+              0.002433493102524001,
+              0.002607580918993245,
+              0.002815801940809736,
+              0.003068195583919362,
+              0.003379233064836757,
+              0.0037705556556877234,
+              0.004276030606933464,
+              0.004951788999635545,
+              0.005898097776134415,
+              0.007313323213818457,
+              0.009652699318410793,
+              0.014243015190260631,
+              0.027282137958024526
+            ],
+            "ifft_of_ls_linear": [
+              0.5562489413022391,
+              0.015679985885845828,
+              0.01449007255207391,
+              0.03853205336694741,
+              0.01816492015569119,
+              0.012036785222303852,
+              0.005866360417246554,
+              0.0062481607806985345,
+              0.0069097386370398995,
+              0.004782353376922573,
+              0.007283436219667949,
+              0.005039651736511751,
+              0.001122169402844698,
+              0.0007779495818201461,
+              0.0007664049193594891,
+              0.00014366498559170924,
+              0.0,
+              6.876342366912592e-05,
+              0.00023297208244080613,
+              0.0012859001666669838,
+              0.0010000280481998803,
+              0.0009659450403743309,
+              0.0006355611431136949,
+              0.0008677637118738249,
+              0.0011855237252092784,
+              0.0009861535270643128,
+              0.0017674199125007918,
+              0.0014155620660905265,
+              0.00036007127908095334,
+              0.0002821357036082908,
+              0.00031143544075676533,
+              6.494804857224763e-05,
+              0.0,
+              3.784282067073142e-05,
+              0.00014056176799146191,
+              0.0008478425485100842,
+              0.0007187155904410827,
+              0.0007552326482968936,
+              0.0005398178538428484,
+              0.0007999203728537354,
+              0.0011855237252092754,
+              0.0010697917869873595,
+              0.0020808934197976687,
+              0.0018105085368934546,
+              0.0005010067726667276,
+              0.0004279076922126026,
+              0.0005161841958574363,
+              0.00011801578479879973,
+              0.0,
+              8.37082623100289e-05,
+              0.0003459054955362757,
+              0.0023378067632960644,
+              0.002239891632009656,
+              0.0026887620250883528,
+              0.002224558454328667,
+              0.0038792153466959424,
+              0.006909738637039904,
+              0.007702823931798322,
+              0.01920707538948185,
+              0.02256101692213138,
+              0.00910049277051164,
+              0.012822272257107066,
+              0.03210490445827858,
+              0.02691090322751027
+            ],
+            "after_truncation": [
+              0.5562489413022391,
+              0.015679985885845828,
+              0.01449007255207391,
+              0.03853205336694741,
+              0.01816492015569119,
+              0.012036785222303852,
+              0.005866360417246554,
+              0.0062481607806985345,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0,
+              0.0
+            ]
+          }
+        },
+        "report_assets": {
+          "problem_summary": "Estimate full 64-tone CFR from 16 noisy comb pilots and evaluate non-pilot NMSE vs SNR.",
+          "solution_summary": "Implemented all required baselines plus covariance-aided LMMSE; included DFT-Lt and pilot-density sensitivity.",
+          "evaluation_summary": "500 MC trials/SNR over 0:2:30 dB with 95% CI bands, runtime and FLOPs comparison.",
+          "tables": [
+            {
+              "name": "method_summary",
+              "columns": [
+                "method",
+                "avg_nmse_dB_over_snr",
+                "avg_runtime_ms",
+                "flops_per_symbol"
+              ],
+              "rows": [
+                [
+                  "LS_linear_interpolation",
+                  -16.115611291859437,
+                  0.008126208602334373,
+                  512.0
+                ],
+                [
+                  "LS_spline_interpolation",
+                  -14.76808864085377,
+                  0.20647377151908586,
+                  1600.0
+                ],
+                [
+                  "DFT_truncated_LS",
+                  -16.73709919896713,
+                  0.011085179161455017,
+                  3840.0
+                ],
+                [
+                  "LMMSE_Wiener_frequency_interpolation",
+                  -26.13564572684161,
+                  0.3502980851699249,
+                  133802.66666666666
+                ]
+              ]
+            }
+          ],
+          "figures": [
+            {
+              "title": "Metric Curve",
+              "xlabel": "SNR (dB)",
+              "ylabel": "metric curve",
+              "x": [
+                0.0,
+                2.0,
+                4.0,
+                6.0,
+                8.0,
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,
+                28.0,
+                30.0
+              ],
+              "series": {
+                "LS_linear_interpolation": [
+                  -2.485743790774237,
+                  -4.479977252519684,
+                  -6.434112574778916,
+                  -8.351911843863874,
+                  -10.386161863014626,
+                  -12.275024173592547,
+                  -14.232744686277416,
+                  -15.995892779173664,
+                  -17.80077425166268,
+                  -19.58811466321555,
+                  -21.105414067568695,
+                  -22.58421426557419,
+                  -24.02564498847087,
+                  -25.199389819823796,
+                  -26.02229654296969,
+                  -26.882363106470613
+                ],
+                "LS_spline_interpolation": [
+                  -0.9243155090128262,
+                  -2.9285210458571957,
+                  -4.890982293467982,
+                  -6.804695596036092,
+                  -8.8748100414651,
+                  -10.75043037373271,
+                  -12.760459762064281,
+                  -14.552039909847267,
+                  -16.363633017053623,
+                  -18.20398687688075,
+                  -19.782324169977286,
+                  -21.371321919554376,
+                  -22.849580828860883,
+                  -24.151159571748085,
+                  -25.061590685568852,
+                  -26.019566652533047
+                ],
+                "DFT_truncated_LS": [
+                  -4.747097729223082,
+                  -6.694731398650251,
+                  -8.6381817702519,
+                  -10.473538208903337,
+                  -12.351652796516426,
+                  -14.127917803292119,
+                  -15.882175616984732,
+                  -17.334987957088494,
+                  -18.77056847524416,
+                  -20.138944583975295,
+                  -21.206646748466994,
+                  -22.08638307535155,
+                  -23.160701937242337,
+                  -23.70820262197679,
+                  -24.031770848421935,
+                  -24.440085611884655
+                ],
+                "LMMSE_Wiener_frequency_interpolation": [
+                  -13.431623252320438,
+                  -15.263764827192194,
+                  -16.98235004002397,
+                  -18.50717803142064,
+                  -20.13530682206121,
+                  -21.704226857881846,
+                  -23.30289661047621,
+                  -24.882983575391588,
+                  -26.60710739731338,
+                  -28.43705013641664,
+                  -30.26722092542194,
+                  -32.14130178838382,
+                  -33.73794463275877,
+                  -35.624517172456926,
+                  -37.766834742369376,
+                  -39.37802481757682
+                ]
+              }
+            },
+            {
+              "title": "Dft Truncation Sensitivity Curves",
+              "xlabel": "SNR (dB)",
+              "ylabel": "dft truncation sensitivity curves",
+              "x": [
+                0.0,
+                2.0,
+                4.0,
+                6.0,
+                8.0,
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,
+                28.0,
+                30.0
+              ],
+              "series": {
+                "DFT_Lt4": [
+                  -6.754184036605136,
+                  -8.599516506667493,
+                  -10.487090202439507,
+                  -12.324606872687864,
+                  -14.102124771001323,
+                  -15.825905163958083,
+                  -17.3914758153792,
+                  -18.66029643311237,
+                  -20.028660912679914,
+                  -21.147681908906204,
+                  -22.05758665083066,
+                  -22.731981973456662,
+                  -23.728593428587992,
+                  -24.07262530623311,
+                  -24.327163251525228,
+                  -24.606888451221216
+                ],
+                "DFT_Lt8": [
+                  -4.747097729223082,
+                  -6.694731398650251,
+                  -8.6381817702519,
+                  -10.473538208903337,
+                  -12.351652796516426,
+                  -14.127917803292119,
+                  -15.882175616984732,
+                  -17.334987957088494,
+                  -18.77056847524416,
+                  -20.138944583975295,
+                  -21.206646748466994,
+                  -22.08638307535155,
+                  -23.160701937242337,
+                  -23.70820262197679,
+                  -24.031770848421935,
+                  -24.440085611884655
+                ],
+                "DFT_Lt12": [
+                  -4.4414552714665225,
+                  -6.382637564760567,
+                  -8.334818848037504,
+                  -10.186181548566164,
+                  -12.080789813169314,
+                  -13.840253272534126,
+                  -15.626813194449158,
+                  -17.089053682178985,
+                  -18.552566974575885,
+                  -19.924398296755683,
+                  -21.013727924316218,
+                  -21.921191424984585,
+                  -23.003419993258298,
+                  -23.57677800230981,
+                  -23.91554421997763,
+                  -24.326177019335258
+                ],
+                "DFT_Lt16": [
+                  -4.4292244857881595,
+                  -6.370524113540541,
+                  -8.322529032984017,
+                  -10.172035870208656,
+                  -12.066121164715314,
+                  -13.823317923713349,
+                  -15.609149657510294,
+                  -17.06894285870646,
+                  -18.530096838733524,
+                  -19.89881557981024,
+                  -20.984782373043394,
+                  -21.88902218761491,
+                  -22.968562931677152,
+                  -23.53895546135424,
+                  -23.875032770524413,
+                  -24.283336357229455
+                ]
+              }
+            },
+            {
+              "title": "Snapshot Sensitivity",
+              "xlabel": "Number of pilots (fixed SNR=15 dB)",
+              "ylabel": "snapshot sensitivity",
+              "x": [
+                8,
+                16,
+                32
+              ],
+              "series": {
+                "proposed": [
+                  -22.356192064997316,
+                  -24.808858835614434,
+                  -27.460406249356872
+                ],
+                "baseline_name": [
+                  -15.844186470892051,
+                  -16.51341203651241,
+                  -17.623186373862495
+                ]
+              }
+            }
+          ],
+          "figures_metadata": [
+            {
+              "title": "Metric Curve",
+              "xlabel": "SNR (dB)",
+              "ylabel": "metric curve",
+              "x": [
+                0.0,
+                2.0,
+                4.0,
+                6.0,
+                8.0,
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,
+                28.0,
+                30.0
+              ],
+              "series": {
+                "LS_linear_interpolation": [
+                  -2.485743790774237,
+                  -4.479977252519684,
+                  -6.434112574778916,
+                  -8.351911843863874,
+                  -10.386161863014626,
+                  -12.275024173592547,
+                  -14.232744686277416,
+                  -15.995892779173664,
+                  -17.80077425166268,
+                  -19.58811466321555,
+                  -21.105414067568695,
+                  -22.58421426557419,
+                  -24.02564498847087,
+                  -25.199389819823796,
+                  -26.02229654296969,
+                  -26.882363106470613
+                ],
+                "LS_spline_interpolation": [
+                  -0.9243155090128262,
+                  -2.9285210458571957,
+                  -4.890982293467982,
+                  -6.804695596036092,
+                  -8.8748100414651,
+                  -10.75043037373271,
+                  -12.760459762064281,
+                  -14.552039909847267,
+                  -16.363633017053623,
+                  -18.20398687688075,
+                  -19.782324169977286,
+                  -21.371321919554376,
+                  -22.849580828860883,
+                  -24.151159571748085,
+                  -25.061590685568852,
+                  -26.019566652533047
+                ],
+                "DFT_truncated_LS": [
+                  -4.747097729223082,
+                  -6.694731398650251,
+                  -8.6381817702519,
+                  -10.473538208903337,
+                  -12.351652796516426,
+                  -14.127917803292119,
+                  -15.882175616984732,
+                  -17.334987957088494,
+                  -18.77056847524416,
+                  -20.138944583975295,
+                  -21.206646748466994,
+                  -22.08638307535155,
+                  -23.160701937242337,
+                  -23.70820262197679,
+                  -24.031770848421935,
+                  -24.440085611884655
+                ],
+                "LMMSE_Wiener_frequency_interpolation": [
+                  -13.431623252320438,
+                  -15.263764827192194,
+                  -16.98235004002397,
+                  -18.50717803142064,
+                  -20.13530682206121,
+                  -21.704226857881846,
+                  -23.30289661047621,
+                  -24.882983575391588,
+                  -26.60710739731338,
+                  -28.43705013641664,
+                  -30.26722092542194,
+                  -32.14130178838382,
+                  -33.73794463275877,
+                  -35.624517172456926,
+                  -37.766834742369376,
+                  -39.37802481757682
+                ]
+              }
+            },
+            {
+              "title": "Dft Truncation Sensitivity Curves",
+              "xlabel": "SNR (dB)",
+              "ylabel": "dft truncation sensitivity curves",
+              "x": [
+                0.0,
+                2.0,
+                4.0,
+                6.0,
+                8.0,
+                10.0,
+                12.0,
+                14.0,
+                16.0,
+                18.0,
+                20.0,
+                22.0,
+                24.0,
+                26.0,
+                28.0,
+                30.0
+              ],
+              "series": {
+                "DFT_Lt4": [
+                  -6.754184036605136,
+                  -8.599516506667493,
+                  -10.487090202439507,
+                  -12.324606872687864,
+                  -14.102124771001323,
+                  -15.825905163958083,
+                  -17.3914758153792,
+                  -18.66029643311237,
+                  -20.028660912679914,
+                  -21.147681908906204,
+                  -22.05758665083066,
+                  -22.731981973456662,
+                  -23.728593428587992,
+                  -24.07262530623311,
+                  -24.327163251525228,
+                  -24.606888451221216
+                ],
+                "DFT_Lt8": [
+                  -4.747097729223082,
+                  -6.694731398650251,
+                  -8.6381817702519,
+                  -10.473538208903337,
+                  -12.351652796516426,
+                  -14.127917803292119,
+                  -15.882175616984732,
+                  -17.334987957088494,
+                  -18.77056847524416,
+                  -20.138944583975295,
+                  -21.206646748466994,
+                  -22.08638307535155,
+                  -23.160701937242337,
+                  -23.70820262197679,
+                  -24.031770848421935,
+                  -24.440085611884655
+                ],
+                "DFT_Lt12": [
+                  -4.4414552714665225,
+                  -6.382637564760567,
+                  -8.334818848037504,
+                  -10.186181548566164,
+                  -12.080789813169314,
+                  -13.840253272534126,
+                  -15.626813194449158,
+                  -17.089053682178985,
+                  -18.552566974575885,
+                  -19.924398296755683,
+                  -21.013727924316218,
+                  -21.921191424984585,
+                  -23.003419993258298,
+                  -23.57677800230981,
+                  -23.91554421997763,
+                  -24.326177019335258
+                ],
+                "DFT_Lt16": [
+                  -4.4292244857881595,
+                  -6.370524113540541,
+                  -8.322529032984017,
+                  -10.172035870208656,
+                  -12.066121164715314,
+                  -13.823317923713349,
+                  -15.609149657510294,
+                  -17.06894285870646,
+                  -18.530096838733524,
+                  -19.89881557981024,
+                  -20.984782373043394,
+                  -21.88902218761491,
+                  -22.968562931677152,
+                  -23.53895546135424,
+                  -23.875032770524413,
+                  -24.283336357229455
+                ]
+              }
+            },
+            {
+              "title": "Snapshot Sensitivity",
+              "xlabel": "Number of pilots (fixed SNR=15 dB)",
+              "ylabel": "snapshot sensitivity",
+              "x": [
+                8,
+                16,
+                32
+              ],
+              "series": {
+                "proposed": [
+                  -22.356192064997316,
+                  -24.808858835614434,
+                  -27.460406249356872
+                ],
+                "baseline_name": [
+                  -15.844186470892051,
+                  -16.51341203651241,
+                  -17.623186373862495
+                ]
+              }
+            }
+          ]
+        },
+        "notes": {
+          "primary_metric": "NMSE_dB_nonpilot"
+        }
+      }
+    }
+  },
+  {
+    "stage": "S8",
+    "title": "Report generation",
+    "summary_lines": [
+      "Report lines: 390",
+      "Report preview: Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking....",
+      "Review score: 9.1"
+    ],
+    "payload": {
+      "report_preview": [
+        "Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking... (8s elapsed)Thinking... (9s elapsed)Thinking... (10s elapsed)Thinking... (11s elapsed)Thinking... (12s elapsed)Thinking... (13s elapsed)Thinking... (14s elapsed)Thinking... (15s elapsed)Thinking... (16s elapsed)Thinking... (17s elapsed)Thinking... (18s elapsed)Thinking... (19s elapsed)Thinking... (20s elapsed)Thinking... (21s elapsed)Thinking... (22s elapsed)Thinking... (23s elapsed)Thinking... (24s elapsed)## 1. Abstract",
+        "",
+        "This study addresses full-band channel frequency response (CFR) recovery in a pilot-aided SISO OFDM link with $N=64$ active subcarriers, where only $N_p=16$ uniformly spaced comb pilots (every 4 subcarriers) are directly observed and the remaining 48 non-pilot tones must be estimated under noise. The pilot-domain observation follows $\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p$ with known unit-modulus pilots, and three estimator classes with explicit complexity-performance separation are compared: **LS + linear/spline interpolation** (low complexity baseline), **DFT-truncated LS reconstruction** (moderate complexity, delay-domain denoising), and **pilot-domain covariance-aided LMMSE Wiener interpolation** (higher complexity, second-order optimal linear estimator). The simulation uses synthetic 3GPP TDL-A channels at 3.5 GHz, 0.96 MHz bandwidth ($\\Delta f=15$ kHz), CP length 16, RMS delay spread 30 ns, and a 0:2:30 dB SNR sweep with 500 Monte Carlo trials per SNR and 95% confidence intervals. Results show monotonic NMSE improvement with SNR for all methods, but with clear separation: at 30 dB, **LS-linear** reaches $-26.88$ dB, **LS-spline** $-26.02$ dB, **DFT-truncated** $-24.44$ dB (for $L_t=8$), and **LMMSE** $-39.38$ dB. Averaged across the SNR sweep, **LMMSE** achieves $-26.14$ dB versus $-16.12$ dB for **LS-linear**, yielding roughly 10 dB class-level advantage. Runtime/complexity measurements confirm expected trade-offs: **LS-linear** is fastest ($0.0081$ ms/symbol), **DFT-truncated** remains near-baseline ($0.0111$ ms), while **LMMSE** is slowest ($0.3503$ ms) but most accurate. Sensitivity analysis further shows DFT truncation-length dependence and substantial gains from higher pilot density.",
+        "",
+        "---",
+        "",
+        "## 2. System Model and Mathematical Formulation",
+        "",
+        "We consider a single-antenna OFDM downlink/uplink-equivalent baseband model with $N=64$ active subcarriers and comb pilots on indices $\\mathcal{P}=\\{0,4,8,\\dots,60\\}$, so $|\\mathcal{P}|=16$. The data-bearing non-pilot indices are $\\mathcal{D}=\\{0,\\dots,63\\}\\setminus\\mathcal{P}$ with $|\\mathcal{D}|=48$. The propagation follows a frequency-selective 3GPP TDL-A model under low mobility (3 km/h), and per-symbol quasi-static fading is assumed. Because the RMS delay spread (30 ns) is small relative to inverse occupied bandwidth, the CFR is smooth across frequency and strongly correlated between nearby pilot and data tones.",
+        "",
+        "The OFDM numerology is fixed at $\\Delta f=15$ kHz, yielding occupied bandwidth $N\\Delta f=0.96$ MHz, with CP length $N_{\\text{CP}}=16$ samples. Under perfect synchronization and known unit-modulus pilots, the estimation task is decoupled to frequency-domain pilot observations followed by full-band reconstruction. The modeling focus is not equalization/detection, but accurate recovery of $\\mathbf{H}\\in\\mathbb{C}^{64}$, especially over non-pilot tones where interpolation/modeling quality is tested.",
+        "",
+        "**Key Formula 1 — Pilot-domain observation model**",
+        "$$",
+        "\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p,\\quad \\mathbf{n}_p\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_n^2\\mathbf{I})",
+        "$$",
+        "This equation models the received pilot vector $\\mathbf{y}_p\\in\\mathbb{C}^{16}$ as known pilot symbols $\\mathbf{X}_p$ multiplying the true pilot CFR samples $\\mathbf{h}_p$, corrupted by circular complex AWGN $\\mathbf{n}_p$. Physically, it is the per-subcarrier input-output relation after OFDM demodulation and assuming negligible inter-carrier interference within one symbol.",
+        "",
+        "**Key Formula 2 — LS pilot estimator**",
+        "$$"
+      ]
+    }
+  }
+]

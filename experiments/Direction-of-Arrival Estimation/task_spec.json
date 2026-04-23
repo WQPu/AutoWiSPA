@@ -1,0 +1,106 @@
+{
+  "problem_understanding": {
+    "task_category": "estimation|localization|subspace_spectral_estimation",
+    "problem_statement": "An 8-element half-wavelength ULA receives L=200 temporal snapshots of two uncorrelated narrowband far-field sources in additive spatially white complex Gaussian noise. Estimate the two DoAs (D=2 known), form a spatial pseudo-spectrum for peak localization, and evaluate DoA RMSE over SNR from 0 dB to 30 dB. Use the array model x(t)=A(theta)s(t)+n(t) with sample-covariance subspace decomposition. Benchmark estimator performance against stochastic CRB across SNR and characterize resolution threshold as the minimum SNR where two sources remain resolvable with high probability.",
+    "exploitable_structure": "ULA Vandermonde steering matrix, rank-2 signal subspace in Rx covariance, noise-subspace orthogonality exploited by MUSIC/Root-MUSIC, shift-invariance enabling ESPRIT baseline, and approximately Toeplitz covariance under uncorrelated far-field sources."
+  },
+  "system_model": {
+    "waveform": "custom_narrowband",
+    "antenna_config": {
+      "num_tx": null,
+      "num_rx": 8,
+      "array_type": "ULA",
+      "additional_elements": {}
+    },
+    "channel_model": "free_space_los",
+    "operating_conditions": {
+      "carrier_freq_ghz": null,
+      "bandwidth_mhz": null,
+      "mobility_kmh": 0
+    },
+    "additional_params": {
+      "num_sources": 2,
+      "num_snapshots": 200,
+      "inter_element_spacing_lambda": 0.5,
+      "source_separation_deg": 15,
+      "snr_nominal_db": 20,
+      "snr_sweep_db": [
+        0,
+        30
+      ],
+      "num_sources_known": true,
+      "recommended_algorithm": "MUSIC",
+      "pseudospectrum_scan_range_deg": [
+        -90,
+        90
+      ],
+      "pseudospectrum_grid_step_deg": 0.1,
+      "rmse_monte_carlo_trials": 1000,
+      "resolution_success_rule": "exactly two dominant peaks, each within +/-2 deg of its nearest true DoA",
+      "source_angles_deg_default": [
+        -7.5,
+        7.5
+      ],
+      "snr_step_db": 2,
+      "snr_definition": "per_sensor_input_snr",
+      "baseline_algorithms_ordered": [
+        "Root-MUSIC",
+        "ESPRIT",
+        "Deterministic Maximum Likelihood",
+        "Stochastic Maximum Likelihood"
+      ],
+      "resolution_probability_target": 0.9,
+      "threshold_gap_rule": "threshold region flagged when RMSE exceeds 3x stochastic CRB"
+    },
+    "channel_properties": [
+      "narrowband",
+      "far_field",
+      "plane_wave",
+      "spatially_uncorrelated_sources",
+      "quasi_static_over_snapshots",
+      "awgn"
+    ]
+  },
+  "performance_targets": {
+    "primary_metric": "RMSE_deg",
+    "secondary_metrics": [
+      "resolution_threshold_snr_db",
+      "probability_of_resolution",
+      "pseudospectrum_peak_separation_deg",
+      "runtime_per_trial_ms",
+      "rmse_to_crb_ratio"
+    ],
+    "theoretical_bound": "Stochastic CRB for two-source ULA DoA estimation; optional WWB-informed interpretation for low-SNR threshold behavior",
+    "baseline_algorithms": [
+      "MUSIC",
+      "Root-MUSIC",
+      "ESPRIT",
+      "Deterministic Maximum Likelihood",
+      "Stochastic Maximum Likelihood"
+    ],
+    "target_value": null
+  },
+  "constraints": {
+    "complexity": "offline_simulation_feasible; eigendecomposition-based methods preferred over heavy iterative solvers for primary sweep",
+    "data_availability": "no_training_data"
+  },
+  "design_preferences": {
+    "approach": "classical_signal_processing",
+    "interpretability": "high",
+    "online_adaptation": false
+  },
+  "assumptions_made": [
+    "MUSIC remains the primary estimator to satisfy pseudo-spectrum generation and peak-based localization requirements.",
+    "Root-MUSIC and ESPRIT are added as structured baselines for ULA; ML variants are included as higher-complexity references.",
+    "SNR is defined as per-sensor input SNR and kept consistent across all curves and bound comparisons.",
+    "Carrier frequency and bandwidth remain unspecified because array spacing is normalized to wavelength in narrowband simulation.",
+    "Default true angles are set to [-7.5, +7.5] deg to enforce the stated 15 deg separation without changing user intent.",
+    "RMSE vs SNR uses Monte Carlo with 1000 trials per SNR point and fixed M=8, L=200 unless explicitly varied.",
+    "Resolution threshold is the minimum SNR where probability of resolution is at least 0.9 under the stated peak rule.",
+    "CRB is used as the mandatory benchmark; low-SNR threshold interpretation may reference WWB concepts but does not replace CRB.",
+    "No non-circular source model, RF lens, or low-resolution ADC impairment is enabled by default because the scenario specifies a standard ULA narrowband setting."
+  ],
+  "task_category": "estimation|localization",
+  "task_description": "An 8-element half-wavelength ULA receives L=200 temporal snapshots of two uncorrelated narrowband far-field sources in additive noise. The objective is to estimate the two DoAs (D=2 known), generate the spatial pseudo-spectrum for peak localization, and evaluate DoA RMSE over SNR=0 to 30 dB. The core model is x(t)=A(theta)s(t)+n(t), where A(theta) is the array manifold; subspace separation from the sample covariance enables high-resolution DoA estimation. Performance is benchmarked against stochastic CRB and includes resolution-threshold characterization (minimum SNR where two sources remain resolvable with probability >= 0.9).",
+  "exploitable_structure": "Vandermonde ULA manifold, rank-D covariance structure, noise-subspace orthogonality for MUSIC family, and ULA shift invariance supporting Root-MUSIC/ESPRIT cross-checks."
+}

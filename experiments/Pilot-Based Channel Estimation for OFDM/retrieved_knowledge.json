@@ -1,0 +1,72 @@
+{
+  "relevant_algorithms": [
+    "Linear Minimum Mean Square Error (LMMSE)",
+    "Maximum Likelihood (ML)",
+    "DFT-Based Channel Estimation",
+    "Wiener Filtering",
+    "Linear Interpolation",
+    "Spline Interpolation",
+    "×1-D FFT Interpolation"
+  ],
+  "relevant_papers": [
+    {
+      "title": "Interpolation-based maximum likelihood channel estimation using OFDM pilot symbols",
+      "abstract": "",
+      "abstract_snippet": "",
+      "authors": [
+        "Haiyun Tang",
+        "K.Y. Lau",
+        "R.W. Brodersen"
+      ],
+      "year": "",
+      "source": "CrossRef(Global Telecommunications Conf)",
+      "doi": "10.1109/glocom.2002.1188521",
+      "url": "https://doi.org/10.1109/glocom.2002.1188521",
+      "citation_count": 6
+    },
+    {
+      "title": "DFT-Based Channel Estimation in Comb-Type Pilot-Aided OFDM Systems with Virtual Carriers",
+      "abstract": "",
+      "abstract_snippet": "",
+      "authors": [
+        "Kan Zheng",
+        "Jian Su",
+        "Wenbo Wang"
+      ],
+      "year": "2007",
+      "source": "CrossRef(2007 IEEE 18th International S)",
+      "doi": "10.1109/pimrc.2007.4394389",
+      "url": "https://doi.org/10.1109/pimrc.2007.4394389",
+      "citation_count": 5
+    },
+    {
+      "title": "2×1-D fast Fourier transform interpolation for LTE-A OFDM pilot-based channel estimation",
+      "abstract": "",
+      "abstract_snippet": "",
+      "authors": [
+        "Mohammed Zourob",
+        "Raveendra Rao"
+      ],
+      "year": "2017",
+      "source": "CrossRef(2017 International Conference )",
+      "doi": "10.1109/icecta.2017.8251938",
+      "url": "https://doi.org/10.1109/icecta.2017.8251938",
+      "citation_count": 4
+    },
+    {
+      "title": "A novel interpolation algorithm for pilot-assisted channel estimation in DDO-OFDM System",
+      "abstract": "",
+      "abstract_snippet": "",
+      "authors": [
+        "Lilong Liu"
+      ],
+      "year": "2011",
+      "source": "CrossRef(Optical Transmission Systems, )",
+      "doi": "10.1364/acp.2011.83092k",
+      "url": "https://doi.org/10.1364/acp.2011.83092k",
+      "citation_count": 0
+    }
+  ],
+  "design_insights": "Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking... (8s elapsed)Thinking... (9s elapsed)Thinking... (10s elapsed)## 1. **Core Technical Roadmap**\n\nGiven the paper set, the dominant family is **classical pilot-aided channel estimation for OFDM**, not deep learning. The likely algorithmic map is:\n\n### A) Pilot-domain estimation + interpolation (frequency and/or time)\n- Start with pilot subcarriers:\n  \\[\n  \\hat{H}[k_p] = \\frac{Y[k_p]}{X[k_p]}\n  \\]\n  (LS estimate on pilot tones)\n- Reconstruct full-band channel via interpolation:\n  - linear / second-order / spline\n  - FFT-based interpolation\n  - ML-optimized interpolation weights\n\nThis is the core of [P1], [P3], [P4].\n\n---\n\n### B) DFT-delay domain denoising / truncation\n- Transform LS pilot-based channel estimate to delay domain via IDFT.\n- Enforce channel-length prior \\(L\\) by zeroing taps outside delay spread.\n- Transform back via DFT to get denoised channel estimate over all subcarriers.\n- In comb-type pilots with virtual carriers, account for unused edge/DC carriers to avoid bias.\n\nThis is the center of [P2], and often combined with interpolation pipelines.\n\n---\n\n### C) Complexity-aware FFT implementations\n- Replace high-order interpolation operations with FFT/IFFT blocks and structured low-cost transforms (e.g., “2×1-D FFT interpolation” in [P3]).\n- Goal: near-LMMSE quality at LS-like complexity.\n\n---\n\n### D) (Potentially) ML criterion in interpolation\n- “Interpolation-based maximum likelihood” [P1] likely means interpolation coefficients selected by likelihood/cost minimization under noise model, rather than fixed linear interpolation.\n\n---\n\n## 2. **Key Innovation Extraction**\n\n> Note: abstracts are unavailable, so this extraction is title-driven and domain-consistent.\n\n### [P1] *Interpolation-based maximum likelihood channel estimation using OFDM pilot symbols*\n1. **ML-driven interpolation parameterization**: instead of heuristic interpolation, estimate/interpolate channel using a likelihood objective tied to received pilot observations [P1].\n2. **Pilot-aided estimation with improved robustness** under noisy pilot observations compared to plain LS + linear interpolation [P1].\n\n---\n\n### [P2] *DFT-Based Channel Estimation in Comb-Type Pilot-Aided OFDM Systems with Virtual Carriers*\n1. **DFT-domain tap truncation/denoising** tailored to comb pilots, exploiting finite channel delay spread [P2].\n2. **Explicit treatment of virtual carriers** (null subcarriers) in estimation, which is important for practical OFDM spectra with guard bands/DC null [P2].\n\n---\n\n### [P3] *2×1-D fast Fourier transform interpolation for LTE-A OFDM pilot-based channel estimation*\n1. **Two-stage 1-D FFT interpolation structure** to reduce computational burden vs full 2-D interpolation [P3].\n2. **LTE-A-oriented practical estimator** balancing accuracy and complexity for pilot grids used in standards [P3].\n\n---\n\n### [P4] *A novel interpolation algorithm for pilot-assisted channel estimation in DDO-OFDM System*\n1. **New interpolation rule for pilot-assisted estimation** adapted to DDO-OFDM channel characteristics [P4].\n2. **Potentially improved interpolation under system-specific impairments** (likely optical/DDO constraints), suggesting robustness in non-ideal channel conditions [P4].\n\n---\n\n## 3. **Recommended Algorithm Framework**\n\nFor your setting (**SISO OFDM estimation/recovery**, notebook-first, NumPy-only), best two candidates:\n\n---\n\n### **Candidate 1 (Primary): LS-on-pilots + DFT-delay denoising + interpolation**\n**Why**\n- Strong classical baseline-performance tradeoff.\n- Directly aligned with [P2], and can absorb ideas from [P3].\n- Very implementable in NumPy and easy to explain.\n\n**Pipeline**\n1. LS at pilot tones.\n2. Build sparse frequency estimate on pilot grid.\n3. Interpolate to full grid (linear/spline or FFT-based).\n4. IDFT \\(\\rightarrow\\) delay domain.\n5. Keep first \\(L\\) taps (or adaptive threshold).\n6. DFT back to full-band estimate.\n7. Equalize and detect.\n\n**Strength**\n- Usually much lower NMSE than pure LS interpolation at low/moderate SNR if \\(L\\) is approximately known.\n\n---\n\n### **Candidate 2 (Secondary): ML-regularized interpolation estimator**\n**Why**\n- Captures [P1] philosophy: optimize interpolation/filter weights by minimizing a noise-aware objective.\n- Useful when pilot spacing is wide and simple interpolation underfits.\n\n**Practical notebook version**\n- Implement as **regularized weighted LS interpolation**:\n  \\[\n  \\hat{\\mathbf{h}} = \\arg\\min_{\\mathbf{h}} \\|\\mathbf{y}_p - \\mathbf{X}_p \\mathbf{S}\\mathbf{h}\\|_2^2 + \\lambda \\|\\mathbf{D}\\mathbf{h}\\|_2^2\n  \\]\n  where \\(\\mathbf{S}\\) maps full-grid channel to pilot positions and \\(\\mathbf{D}\\) enforces smoothness.\n- This is stable, ML/MAP-flavored, and easy with NumPy linear algebra.\n\n---\n\n## 4. **Notebook Implementation Guidance**\n\n## A) Narrative structure (recommended)\n1. **Problem setup**: OFDM SISO, comb pilots, virtual carriers, CP, channel model.\n2. **Baselines**:\n   - LS (pilot-only, no interpolation beyond nearest)\n   - LS + linear interpolation\n3. **Proposed methods**:\n   - DFT-based denoising estimator ([P2]-style)\n   - FFT interpolation / 2-stage interpolation ([P3]-inspired)\n   - optional regularized ML interpolation ([P1]-inspired)\n4. **Evaluation**:\n   - NMSE vs SNR\n   - BER vs SNR (QPSK/16QAM)\n   - Runtime/complexity proxy\n5. **Ablations**:\n   - Pilot spacing\n   - Channel length mismatch (\\(L_{\\text{true}}\\) vs \\(L_{\\text{assumed}}\\))\n   - Doppler (block fading vs mildly time-varying)\n\n---\n\n## B) Executable experiment design (NumPy/Matplotlib)\nUse only:\n- `numpy` for FFT, random channels, linear solves\n- `matplotlib` for curves\n- Optional `time.perf_counter` for runtime\n\n### Minimum reproducible setup\n- FFT size \\(N = 256\\) (or 512)\n- CP length \\(N_{cp} = 32\\)\n- Comb pilot spacing: every 4 or 8 subcarriers\n- Virtual carriers: guard bands + DC null\n- Channel: tapped-delay-line Rayleigh, \\(L=8\\sim16\\)\n- SNR sweep: 0 to 30 dB\n- Monte Carlo: 200–1000 OFDM symbols depending on runtime\n\n### Metrics\n- Channel NMSE:\n  \\[\n  \\mathrm{NMSE} = \\frac{\\mathbb{E}\\|\\hat{\\mathbf{H}}-\\mathbf{H}\\|_2^2}{\\mathbb{E}\\|\\mathbf{H}\\|_2^2}\n  \\]\n- BER after one-tap equalization:\n  \\[\n  \\hat{X}[k]=\\frac{Y[k]}{\\hat{H}[k]}\n  \\]\n\n### Plots to include\n- NMSE vs SNR (log scale)\n- BER vs SNR (log scale)\n- Example channel magnitude true vs estimated across subcarriers\n- Runtime bar chart per estimator\n\n---\n\n## C) Result presentation tips\n- Always include **confidence intervals** (or shaded std) over trials.\n- Report both **performance and complexity**; [P3]-style methods are about this tradeoff.\n- Explicitly state assumptions: perfect timing/frequency sync, block fading, known pilot symbols.\n\n---\n\n## 5. **Caveats**\n\n1. **Pilot/data indexing errors**  \n   Most common bug: mixing absolute FFT bins and active-subcarrier indices when virtual carriers/DC null exist.\n\n2. **FFT normalization consistency**  \n   If IFFT/FFT scaling differs across transmitter/channel estimator, NMSE can look wrong even when shape is correct.\n\n3. **Assumed channel length \\(L\\) sensitivity**  \n   DFT truncation helps only when \\(L\\) is reasonable.  \n   - Too small: signal loss (bias)  \n   - Too large: noise leakage (variance)\n\n4. **Comb pilot spacing vs coherence bandwidth**  \n   If pilot spacing is too wide for channel selectivity, any interpolation (even ML-flavored) degrades sharply.\n\n5. **Time variation within OFDM symbols**  \n   Fast fading causes ICI; one-tap per-subcarrier model weakens. Methods here mostly assume quasi-static symbol-wise channel.\n\n6. **Zero-forcing instability in deep fades**  \n   Use MMSE equalization variant in BER tests for fairness:\n   \\[\n   \\hat{X}[k] = \\frac{\\hat{H}^*[k]}{|\\hat{H}[k]|^2+\\sigma_w^2}Y[k]\n   \\]\n\n7. **Reproducibility**  \n   Fix random seeds and publish exact parameter dictionary at notebook top.\n\n---\n\nIf you want, I can next provide a **ready-to-run NumPy notebook skeleton** (cells + functions) implementing:\n- LS + linear interpolation\n- DFT-truncated estimator ([P2]-style)\n- optional regularized interpolation ([P1]-style)\nwith unified evaluation/plotting.",
+  "paper_search_query": "SISO 64-subcarrier comb-pilot OFDM low-SNR non-pilot CFR reconstruction DFT-based channel interpolation extrapolation OFDM Cramer-Rao bound OFDM channel estimation"
+}

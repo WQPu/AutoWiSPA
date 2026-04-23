@@ -1,0 +1,44 @@
+{
+  "status": "error",
+  "errors": [
+    "Notebook does not reference the planned primary metric 'P_d_at_P_fa_0.01'"
+  ],
+  "warnings": [],
+  "repair_guidance": [
+    "Notebook verification passed"
+  ],
+  "required_roles": [
+    "title",
+    "problem_setup",
+    "modeling_summary",
+    "imports_setup",
+    "data_generation",
+    "algorithm_core",
+    "evaluation_logic",
+    "execution",
+    "plotting",
+    "result_notes"
+  ],
+  "notebook_summary": {
+    "cells": 15,
+    "code_cells": 6,
+    "markdown_cells": 9,
+    "roles": [
+      "problem_setup",
+      "modeling_summary",
+      "imports_setup",
+      "imports_setup_narrative",
+      "data_generation",
+      "data_generation_narrative",
+      "algorithm_core",
+      "algorithm_core_narrative",
+      "evaluation_logic",
+      "evaluation_logic_narrative",
+      "execution",
+      "execution_narrative",
+      "plotting",
+      "result_notes",
+      "title"
+    ]
+  }
+}

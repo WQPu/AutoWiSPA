@@ -1,0 +1,111 @@
+[
+  {
+    "role": "title",
+    "cell_type": "markdown",
+    "purpose": "State experiment goal, model, and deliverables.",
+    "must_include": [
+      "Problem statement with M=8, D=2, L=200",
+      "SNR sweep 0:2:30 dB",
+      "Metrics: RMSE, resolution probability, CRB ratio"
+    ]
+  },
+  {
+    "role": "problem_setup",
+    "cell_type": "markdown",
+    "purpose": "Define scenario constants, assumptions, and resolution rule.",
+    "must_include": [
+      "Array model x[l]=A(theta)s[l]+n[l]",
+      "Per-sensor SNR definition",
+      "Resolution success rule (two peaks within ±2°)"
+    ]
+  },
+  {
+    "role": "modeling_summary",
+    "cell_type": "markdown",
+    "purpose": "Document formal equations used in implementation.",
+    "must_include": [
+      "Steering vector formula",
+      "Sample covariance and eigenspace split",
+      "MUSIC pseudo-spectrum and CRB FIM equations",
+      "Step-10 aggregation formulas for RMSE and threshold"
+    ]
+  },
+  {
+    "role": "imports_setup",
+    "cell_type": "code",
+    "purpose": "Load notebook-only dependencies and deterministic RNG setup.",
+    "must_include": [
+      "import numpy as np",
+      "import scipy.signal as sps",
+      "import matplotlib.pyplot as plt",
+      "timing utility and random seed initialization"
+    ]
+  },
+  {
+    "role": "data_generation",
+    "cell_type": "code",
+    "purpose": "Implement steering-matrix, snapshot simulation, and shared trial generator.",
+    "must_include": [
+      "Functions: steering_vector, steering_matrix, simulate_X",
+      "SNR-to-noise variance conversion gamma=10^(snr/10), sigma_n2=D/gamma",
+      "Shared realizations cache per (snr, trial)"
+    ]
+  },
+  {
+    "role": "algorithm_core",
+    "cell_type": "code",
+    "purpose": "Implement MUSIC (with pseudo-spectrum), Root-MUSIC, ESPRIT, DML, SML, and CRB functions.",
+    "must_include": [
+      "sample covariance Rhat=(X@X^H)/L",
+      "eigendecomposition and noise/signal subspaces",
+      "MUSIC grid scan + peak picking",
+      "Root polynomial construction and rooting",
+      "ESPRIT shift-invariance solve",
+      "DML/SML coarse-to-fine angle search",
+      "stochastic_crb(theta_true, snr_db, L, M, D)"
+    ]
+  },
+  {
+    "role": "evaluation_logic",
+    "cell_type": "code",
+    "purpose": "Create sweep function that loops across every SNR point and optionally sensitivity factors; computes all metrics for all algorithms in the same loop.",
+    "must_include": [
+      "for snr_db in snr_db_grid loop (no replication shortcuts)",
+      "inner Monte Carlo loop over trials",
+      "evaluate MUSIC + all baselines on same X",
+      "compute RMSE, P_res, runtime, RMSE/CRB ratio, threshold mask",
+      "support additional outer loop over sensitivity_factors"
+    ]
+  },
+  {
+    "role": "execution",
+    "cell_type": "code",
+    "purpose": "Run nominal sweep and sensitivity sweeps; collect result dictionaries with required keys.",
+    "must_include": [
+      "Call sweep for default parameters",
+      "Call sweep for L/separation/M sensitivity settings",
+      "Store outputs with keys algorithm, elapsed_sec, performance_data"
+    ]
+  },
+  {
+    "role": "plotting",
+    "cell_type": "code",
+    "purpose": "Generate required comparative figures.",
+    "must_include": [
+      "RMSE vs SNR semilogy with CRB overlay",
+      "Resolution probability vs SNR with 0.9 line",
+      "20 dB MUSIC pseudo-spectrum plot with true-angle markers",
+      "At least one sensitivity comparison plot"
+    ]
+  },
+  {
+    "role": "result_notes",
+    "cell_type": "markdown",
+    "purpose": "Summarize threshold SNR, CRB-gap region, and baseline ranking.",
+    "must_include": [
+      "Reported resolution_threshold_snr_db per algorithm",
+      "SNR region where RMSE > 3x CRB",
+      "Runtime/accuracy trade-off comments for DML/SML"
+    ]
+  }
+]

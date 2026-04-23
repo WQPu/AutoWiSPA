@@ -1,0 +1,450 @@
+{
+  "scenario_spec": {
+    "signal_type": "Single-user SISO complex-baseband binary occupancy sensing with non-coherent energy detection.",
+    "core_parameters": {
+      "num_samples_per_interval_N": 256,
+      "hypotheses": {
+        "H0": "y[n]=w[n],\\;w[n]\\sim\\mathcal{CN}(0,\\sigma_w^2)",
+        "H1": "y[n]=s[n]+w[n],\\;s[n]\\sim\\mathcal{CN}(0,\\gamma\\sigma_w^2),\\;w[n]\\sim\\mathcal{CN}(0,\\sigma_w^2)"
+      },
+      "test_statistic": "U=\\frac{1}{\\sigma_w^2}\\sum_{n=1}^{N}|y[n]|^2",
+      "detector": "Neyman-Pearson energy detector",
+      "false_alarm_constraint": 0.01,
+      "snr_sweep_db": [
+        -20,
+        -18,
+        -16,
+        -14,
+        -12,
+        -10,
+        -8,
+        -6,
+        -4,
+        -2,
+        0
+      ],
+      "num_trials_per_snr": 100000,
+      "random_seed": 2026,
+      "roc_fixed_pfa_points": [
+        0.01,
+        0.05,
+        0.1
+      ],
+      "noise_power_mismatch_db": [
+        -1.0,
+        0.0,
+        1.0
+      ]
+    },
+    "snr_range_db": [
+      -20,
+      0
+    ],
+    "test_scenarios": [
+      {
+        "name": "ideal_awgn_np_validation",
+        "description": "Use known \\(\\sigma_w^2\\) to set analytic NP threshold at \\(P_{fa}=0.01\\) and compare theoretical and empirical \\(P_d\\).",
+        "overrides": {
+          "noise_power_mismatch_db": 0.0,
+          "full_roc": false
+        }
+      },
+      {
+        "name": "fixed_pfa_roc_points",
+        "description": "Evaluate \\(P_d\\) at fixed \\(P_{fa}\\in\\{0.01,0.05,0.1\\}\\) across SNR to verify operating-point consistency.",
+        "overrides": {
+          "pfa_points": [
+            0.01,
+            0.05,
+            0.1
+          ]
+        }
+      },
+      {
+        "name": "full_roc_curve",
+        "description": "Sweep threshold to generate ROC curves and AUC at selected SNR values from the task grid.",
+        "overrides": {
+          "full_roc": true,
+          "pfa_constraint_relaxed_for_curve": true
+        }
+      },
+      {
+        "name": "noise_uncertainty_sensitivity",
+        "description": "Apply threshold computed with assumed noise power while true noise differs by \\(\\pm1\\) dB to expose ED sensitivity.",
+        "overrides": {
+          "noise_power_mismatch_db": [
+            -1.0,
+            1.0
+          ]
+        }
+      }
+    ],
+    "data_contract": {
+      "inputs": [
+        "N",
+        "pfa_target",
+        "snr_db_grid",
+        "num_trials_per_snr",
+        "sigma_w2_assumed",
+        "random_seed",
+        "roc_threshold_grid_or_quantiles",
+        "noise_power_mismatch_db_grid"
+      ],
+      "expected_outputs": [
+        "eta_np_for_each_pfa",
+        "theoretical_pd_vs_snr",
+        "empirical_pfa_vs_snr",
+        "empirical_pd_vs_snr",
+        "abs_theory_empirical_pd_gap_vs_snr",
+        "roc_curves_(pfa,pd,auc)",
+        "runtime_ms_per_interval",
+        "complexity_ops_per_interval",
+        "robustness_results_under_noise_mismatch"
+      ]
+    },
+    "generation_notes": "All Monte Carlo samples are i.i.d. complex Gaussian with vectorized generation and fixed seed for reproducibility."
+  },
+  "system_model_doc": "For each sensing interval, the receiver observes \\(\\mathbf{y}\\in\\mathbb{C}^{N\\times1}\\) with \\(N=256\\) under \\(\\mathcal{H}_0:\\mathbf{y}=\\mathbf{w}\\) and \\(\\mathcal{H}_1:\\mathbf{y}=\\mathbf{s}+\\mathbf{w}\\), where \\(\\mathbf{w}\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_w^2\\mathbf{I}_N)\\) and \\(\\mathbf{s}\\sim\\mathcal{CN}(\\mathbf{0},\\gamma\\sigma_w^2\\mathbf{I}_N)\\); the sufficient statistic is normalized energy \\(U=\\sigma_w^{-2}\\sum_{n=1}^{N}|y[n]|^2\\), with NP rule \\(U\\gtrless_{\\mathcal{H}_0}^{\\mathcal{H}_1}\\eta\\) where \\(\\eta=\\tfrac12F^{-1}_{\\chi^2_{2N}}(1-P_{fa})\\), and theoretical detection is \\(P_d(\\gamma)=Q_N(\\sqrt{2N\\gamma},\\sqrt{2\\eta})=\\Pr\\{\\chi'^2_{2N}(2N\\gamma)>2\\eta\\}\\).",
+  "math_formulation": {
+    "problem_type": "Constrained binary hypothesis test (Neyman-Pearson) with known-noise energy statistic.",
+    "objective": {
+      "type": "maximize",
+      "description": "Maximize detection probability subject to a false-alarm upper bound using a scalar threshold on the sufficient statistic.",
+      "formula_latex": "\\max_{\\eta}\\;P_d(\\eta,\\gamma)\\quad\\text{s.t.}\\quad P_{fa}(\\eta)\\le \\alpha,\\;\\alpha=0.01"
+    },
+    "variables": [
+      {
+        "symbol": "y[n]",
+        "name": "received sample",
+        "domain": "\\mathbb{C}",
+        "description": "Observed complex baseband sample at index \\(n\\in\\{1,\\dots,N\\}\\)."
+      },
+      {
+        "symbol": "U",
+        "name": "normalized energy statistic",
+        "domain": "\\mathbb{R}_{\\ge 0}",
+        "description": "Sufficient statistic for NP testing under i.i.d. circular Gaussian noise."
+      },
+      {
+        "symbol": "\\eta",
+        "name": "decision threshold",
+        "domain": "\\mathbb{R}_{\\ge 0}",
+        "description": "Scalar threshold set by the \\(P_{fa}\\) constraint."
+      },
+      {
+        "symbol": "\\gamma",
+        "name": "SNR",
+        "domain": "\\mathbb{R}_{\\ge 0}",
+        "description": "Linear SNR under \\(\\mathcal{H}_1\\), related to dB by \\(\\gamma=10^{\\mathrm{SNR}_{dB}/10}\\)."
+      },
+      {
+        "symbol": "\\sigma_w^2",
+        "name": "noise variance",
+        "domain": "\\mathbb{R}_{>0}",
+        "description": "Known or calibrated AWGN variance used for normalization and thresholding."
+      },
+      {
+        "symbol": "N",
+        "name": "samples per interval",
+        "domain": "\\mathbb{N}",
+        "description": "Fixed sensing-window length with task value \\(N=256\\)."
+      }
+    ],
+    "constraints": [
+      {
+        "formula_latex": "P_{fa}(\\eta)=\\Pr(U>\\eta\\mid\\mathcal{H}_0)\\le 0.01",
+        "description": "False-alarm probability must satisfy the NP design constraint.",
+        "type": "inequality"
+      },
+      {
+        "formula_latex": "U=\\frac{1}{\\sigma_w^2}\\sum_{n=1}^{N}|y[n]|^2",
+        "description": "Detector must use the specified energy statistic.",
+        "type": "structural"
+      },
+      {
+        "formula_latex": "d(\\mathbf{y})=\\mathbb{1}\\{U>\\eta\\}",
+        "description": "Binary decision rule maps statistic to occupancy decision.",
+        "type": "equality"
+      }
+    ],
+    "key_formulas": [
+      {
+        "name": "H0_statistic_distribution",
+        "formula_latex": "U\\mid\\mathcal{H}_0\\sim \\Gamma(k=N,\\theta=1)\\iff 2U\\sim\\chi^2_{2N}",
+        "description": "Central distribution used for threshold inversion."
+      },
+      {
+        "name": "H1_statistic_distribution",
+        "formula_latex": "\\frac{2}{1+\\gamma}U\\mid\\mathcal{H}_1\\sim\\chi^2_{2N}\\;\\;\\text{(equiv. }2U\\sim(1+\\gamma)\\chi^2_{2N}\\text{)}",
+        "description": "Distribution under random Gaussian signal model for analytic \\(P_d\\)."
+      },
+      {
+        "name": "np_threshold",
+        "formula_latex": "\\eta_{\\alpha}=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha),\\;\\alpha\\in\\{0.01,0.05,0.1\\}",
+        "description": "Closed-form NP threshold from central chi-square quantile."
+      },
+      {
+        "name": "theoretical_detection_probability",
+        "formula_latex": "P_d(\\gamma)=\\Pr\\!\\left(U>\\eta\\mid\\mathcal{H}_1\\right)=1-F_{\\chi^2_{2N}}\\!\\left(\\frac{2\\eta}{1+\\gamma}\\right)=Q_N\\!\\left(\\sqrt{2N\\gamma},\\sqrt{2\\eta}\\right)",
+        "description": "Equivalent chi-square CDF and Marcum-Q forms for \\(P_d\\)."
+      },
+      {
+        "name": "empirical_estimators",
+        "formula_latex": "\\widehat{P}_{fa}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(0)}>\\eta\\},\\quad \\widehat{P}_{d}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(1)}>\\eta\\}",
+        "description": "Monte Carlo estimates with \\(T=10^5\\) trials per SNR."
+      }
+    ],
+    "assumptions": [
+      "Samples are i.i.d. within each sensing interval and the channel is AWGN, frequency-flat, and memoryless.",
+      "Noise variance is known for the main NP design and only perturbed in robustness checks.",
+      "Primary signal is modeled as circular complex Gaussian with power \\(\\gamma\\sigma_w^2\\) under \\(\\mathcal{H}_1\\).",
+      "Single-interval fixed-sample detection is the core scope, not sequential quickest detection."
+    ],
+    "model_properties": {
+      "convexity": "Monotone one-dimensional threshold design with exact quantile inversion rather than a nonconvex search.",
+      "closed_form": true,
+      "iterative_required": false,
+      "special_structure": "Sufficient-statistic reduction to scalar energy with chi-square/gamma distributional structure under both hypotheses."
+    },
+    "formulation_markdown": "The NP detector reduces the \\(N\\)-sample complex observation to scalar energy \\(U\\), so design is a one-parameter test where \\(\\eta\\) is chosen by exact inversion of the \\(\\mathcal{H}_0\\) chi-square CDF to enforce \\(P_{fa}\\le0.01\\), and performance prediction uses the closed-form \\(\\mathcal{H}_1\\) survival function (equivalently Marcum-\\(Q\\)) across the prescribed SNR grid for direct Monte Carlo cross-validation."
+  },
+  "formalization_summary": {
+    "design_implications": [
+      "Exploit sufficient-statistic structure by reducing each interval to scalar energy, enabling exact NP thresholding without iterative optimization.",
+      "Use chi-square/gamma closed forms to generate theoretical curves before simulation, then treat Monte Carlo as validation rather than parameter fitting.",
+      "Maintain O(N) per-interval implementation to satisfy low-compute real-time constraints."
+    ],
+    "evaluation_focus": [
+      "Verify \\(P_{fa}\\le 0.01\\) and report \\(P_d\\) versus SNR from -20 dB to 0 dB with mandatory emphasis at -10 dB.",
+      "Track absolute theory-simulation \\(P_d\\) gap against target \\(\\le 0.02\\) where specified.",
+      "Overlay the Neyman-Pearson optimality benchmark as a reference bound in performance plots.",
+      "Report ROC/AUC and runtime per interval, plus secondary noise-uncertainty sensitivity."
+    ],
+    "implementation_risks": [
+      "Finite-trial tail estimation may bias \\(\\widehat{P}_{fa}\\) near 0.01 if vectorization or RNG handling is incorrect.",
+      "Noise-variance mismatch directly shifts effective threshold and can significantly degrade ED detection at low SNR.",
+      "Inconsistent normalization between theory and simulation (factor-of-2 chi-square scaling) can create false discrepancy."
+    ]
+  },
+  "algorithm_design": {
+    "proposed_algorithm": {
+      "name": "Closed-Form NP Energy Detector with Vectorized Monte Carlo Validation",
+      "type": "closed_form",
+      "summary": "Compute analytic NP thresholds and theoretical \\(P_d\\), then validate with vectorized Monte Carlo and ROC generation under ideal and noise-mismatch settings."
+    },
+    "algorithm_steps": [
+      {
+        "step": 1,
+        "name": "Initialize constants and grids",
+        "description": "Set fixed task parameters and convert SNR dB grid to linear values for all subsequent computations.",
+        "formula_latex": "N=256,\\;\\alpha=0.01,\\;\\mathcal{G}_{\\mathrm{dB}}=\\{-20,-18,\\dots,0\\},\\;\\gamma_i=10^{\\mathcal{G}_{\\mathrm{dB}}[i]/10},\\;i=1,\\dots,11,\\;T=100000",
+        "inputs": [
+          "task configuration"
+        ],
+        "outputs": [
+          "N",
+          "alpha",
+          "gamma_grid",
+          "T"
+        ],
+        "numpy_hint": "Use np.array for dB grid and gamma_grid = 10**(snr_db/10)."
+      },
+      {
+        "step": 2,
+        "name": "Set random seed and noise variance reference",
+        "description": "Fix reproducibility and define assumed noise variance used in normalization and thresholding.",
+        "formula_latex": "\\text{seed}=2026,\\;\\sigma_{w,\\mathrm{assumed}}^2>0\\;\\text{(fixed reference)},\\;\\Delta_{\\nu}\\in\\{-1,0,1\\}\\;\\text{dB}",
+        "inputs": [
+          "random_seed",
+          "sigma_w2_assumed",
+          "noise_power_mismatch_db"
+        ],
+        "outputs": [
+          "rng_state",
+          "sigma_w2_assumed",
+          "mismatch_grid"
+        ],
+        "numpy_hint": "Use np.random.default_rng(seed)."
+      },
+      {
+        "step": 3,
+        "name": "Compute NP thresholds for required Pfa points",
+        "description": "Obtain analytic thresholds from central chi-square quantiles for the fixed and ROC operating points.",
+        "formula_latex": "\\eta(\\alpha_m)=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha_m),\\;\\alpha_m\\in\\{0.01,0.05,0.1\\}",
+        "inputs": [
+          "N",
+          "pfa_points"
+        ],
+        "outputs": [
+          "eta_map"
+        ],
+        "numpy_hint": "Use scipy.stats.chi2.ppf(1-alpha_m, df=2*N)/2."
+      },
+      {
+        "step": 4,
+        "name": "Compute theoretical Pd curves",
+        "description": "Evaluate closed-form \\(P_d\\) over SNR for each fixed \\(P_{fa}\\) threshold.",
+        "formula_latex": "P_d^{\\mathrm{th}}(\\gamma_i;\\alpha_m)=1-F_{\\chi^2_{2N}}\\!\\left(\\frac{2\\eta(\\alpha_m)}{1+\\gamma_i}\\right),\\;i=1,\\dots,11",
+        "inputs": [
+          "gamma_grid",
+          "eta_map",
+          "N"
+        ],
+        "outputs": [
+          "pd_theory"
+        ],
+        "numpy_hint": "Use scipy.stats.chi2.cdf with vectorized broadcasting."
+      },
+      {
+        "step": 5,
+        "name": "Generate H0 Monte Carlo samples",
+        "description": "Create \\(T\\times N\\) i.i.d. complex Gaussian noise matrices for each mismatch scenario.",
+        "formula_latex": "w_{t,n}^{(\\delta)}=\\sqrt{\\frac{\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(a_{t,n}+j b_{t,n}\\right),\\;a_{t,n},b_{t,n}\\overset{i.i.d.}{\\sim}\\mathcal{N}(0,1),\\;\\sigma_{w,\\mathrm{true}}^2(\\delta)=\\sigma_{w,\\mathrm{assumed}}^2\\cdot10^{\\delta/10}",
+        "inputs": [
+          "T",
+          "N",
+          "sigma_w2_assumed",
+          "mismatch_grid",
+          "rng_state"
+        ],
+        "outputs": [
+          "W_delta"
+        ],
+        "numpy_hint": "Use rng.standard_normal((T,N)) for real and imag parts, then combine."
+      },
+      {
+        "step": 6,
+        "name": "Generate H1 Monte Carlo samples per SNR",
+        "description": "For each SNR and mismatch case, generate Gaussian signal plus noise observations.",
+        "formula_latex": "s_{t,n}^{(i,\\delta)}=\\sqrt{\\frac{\\gamma_i\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(c_{t,n}+j d_{t,n}\\right),\\;y_{t,n}^{(1,i,\\delta)}=s_{t,n}^{(i,\\delta)}+w_{t,n}^{(\\delta)}",
+        "inputs": [
+          "gamma_grid",
+          "W_delta",
+          "sigma_w2_assumed",
+          "mismatch_grid",
+          "rng_state"
+        ],
+        "outputs": [
+          "Y1_i_delta"
+        ],
+        "numpy_hint": "Vectorize over trials and samples; loop only over SNR points."
+      },
+      {
+        "step": 7,
+        "name": "Compute normalized energy statistics",
+        "description": "Reduce raw complex samples to scalar sufficient statistics for H0 and H1.",
+        "formula_latex": "U_t^{(0,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|w_{t,n}^{(\\delta)}\\right|^2,\\quad U_t^{(1,i,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|y_{t,n}^{(1,i,\\delta)}\\right|^2",
+        "inputs": [
+          "W_delta",
+          "Y1_i_delta",
+          "sigma_w2_assumed"
+        ],
+        "outputs": [
+          "U0_delta",
+          "U1_i_delta"
+        ],
+        "numpy_hint": "Use np.abs(X)**2 then np.sum(axis=1)."
+      },
+      {
+        "step": 8,
+        "name": "Apply NP decision rule",
+        "description": "Threshold statistics to produce binary decisions under each hypothesis.",
+        "formula_latex": "d_t^{(0,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(0,\\delta)}>\\eta(\\alpha_m)\\},\\quad d_t^{(1,i,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(1,i,\\delta)}>\\eta(\\alpha_m)\\}",
+        "inputs": [
+          "U0_delta",
+          "U1_i_delta",
+          "eta_map"
+        ],
+        "outputs": [
+          "D0",
+          "D1"
+        ],
+        "numpy_hint": "Use boolean comparisons and astype(np.float64) for averaging."
+      },
+      {
+        "step": 9,
+        "name": "Estimate empirical Pfa and Pd",
+        "description": "Compute Monte Carlo probabilities and theory-simulation gaps for reporting targets.",
+        "formula_latex": "\\widehat{P}_{fa}(\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(0,\\delta,\\alpha_m)},\\quad \\widehat{P}_{d}(i,\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(1,i,\\delta,\\alpha_m)},\\quad \\Delta_{pd}(i)=\\left|\\widehat{P}_{d}(i,0,0.01)-P_d^{\\mathrm{th}}(\\gamma_i;0.01)\\right|",
+        "inputs": [
+          "D0",
+          "D1",
+          "pd_theory"
+        ],
+        "outputs": [
+          "pfa_emp",
+          "pd_emp",
+          "pd_gap"
+        ],
+        "numpy_hint": "Use np.mean over trial axis and np.abs difference."
+      },
+      {
+        "step": 10,
+        "name": "Generate full ROC and AUC",
+        "description": "Sweep threshold grid to compute ROC points and numerical AUC at selected SNR values.",
+        "formula_latex": "\\eta_r\\in\\mathcal{E},\\;P_{fa,r}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(0,0)}>\\eta_r\\},\\;P_{d,r}(i)=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(1,i,0)}>\\eta_r\\},\\;\\mathrm{AUC}(i)=\\int_{0}^{1}P_d(P_{fa};i)\\,dP_{fa}",
+        "inputs": [
+          "U0_delta",
+          "U1_i_delta",
+          "roc_threshold_grid"
+        ],
+        "outputs": [
+          "roc_curves",
+          "auc_values"
+        ],
+        "numpy_hint": "Use np.quantile for threshold grid, vectorized comparisons, and np.trapz for AUC."
+      },
+      {
+        "step": 11,
+        "name": "Measure runtime and operation count",
+        "description": "Compute per-interval runtime and analytical operation complexity for the primary detector.",
+        "formula_latex": "\\text{runtime\\_ms\\_per\\_interval}=1000\\cdot\\frac{t_{\\mathrm{end}}-t_{\\mathrm{start}}}{N_{\\mathrm{intervals}}},\\quad \\mathrm{ops}_{\\mathrm{ED}}\\approx c\\,N\\;\\Rightarrow\\;\\mathcal{O}(N)",
+        "inputs": [
+          "timing_marks",
+          "N",
+          "num_intervals_processed"
+        ],
+        "outputs": [
+          "runtime_ms_per_interval",
+          "complexity_ops_per_interval"
+        ],
+        "numpy_hint": "Use time.perf_counter and simple scalar arithmetic."
+      }
+    ],
+    "baseline_algorithms": [
+      {
+        "name": "NP energy detector with analytic threshold",
+        "summary": "Classical reference detector using exact chi-square threshold inversion at target \\(P_{fa}\\).",
+        "key_formula_latex": "\\eta_{\\alpha}=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha),\\quad d=\\mathbb{1}\\{U>\\eta_{\\alpha}\\}",
+        "numpy_hint": "Use scipy.stats.chi2.ppf and vectorized thresholding."
+      },
+      {
+        "name": "Monte Carlo-calibrated CFAR energy threshold",
+        "summary": "Empirical threshold baseline that estimates \\(\\eta\\) from noise-only samples at desired \\(P_{fa}\\).",
+        "key_formula_latex": "\\eta_{\\mathrm{CFAR}}=\\mathrm{Quantile}_{1-\\alpha}\\left(\\{U_t^{(0)}\\}_{t=1}^{T_{\\mathrm{cal}}}\\right)",
+        "numpy_hint": "Use np.quantile(U0_cal, 1-alpha)."
+      },
+      {
+        "name": "Neyman-Pearson optimality for fixed P_fa when using energy as the chosen test statistic under AWGN with known noise variance.",
+        "summary": "Use NP lemma result as analytical benchmark curve and interpret any implementable detector against this optimum within the chosen statistic family.",
+        "key_formula_latex": "\\delta^*(\\mathbf{y})=\\mathbb{1}\\{\\Lambda(\\mathbf{y})>\\tau\\},\\;\\Lambda(\\mathbf{y})=\\frac{f_{\\mathbf{Y}|\\mathcal{H}_1}(\\mathbf{y})}{f_{\\mathbf{Y}|\\mathcal{H}_0}(\\mathbf{y})},\\;P_d\\;\\text{maximized for fixed}\\;P_{fa}",
+        "numpy_hint": "analytical formula — compute and plot as reference"
+      },
+      {
+        "name": "Cyclostationary feature detector (optional reference)",
+        "summary": "Complexity-robustness comparison baseline using cyclic autocorrelation magnitude.",
+        "key_formula_latex": "T_{\\mathrm{CFD}}=\\max_{\\alpha\\in\\mathcal{A},\\tau\\in\\mathcal{T}}\\left|\\hat{R}_y^{\\alpha}(\\tau)\\right|,\\;\\hat{R}_y^{\\alpha}(\\tau)=\\frac{1}{N-\\tau}\\sum_{n=1}^{N-\\tau}y[n+\\tau]y^*[n]e^{-j2\\pi\\alpha n}",
+        "numpy_hint": "Use np.exp, np.conj, and optionally np.fft.fft for acceleration."
+      }
+    ],
+    "convergence": {
+      "criterion": "",
+      "typical_iterations": null,
+      "formula_latex": ""
+    },
+    "complexity": {
+      "per_iteration": "Primary detector evaluation is O(N) per interval; full study cost is O(|SNR|·T·N) for Monte Carlo sweeps.",
+      "dominant_operation": "Accumulation of squared magnitudes for energy statistics over T×N samples (and threshold sweeps for ROC)."
+    }
+  }
+}

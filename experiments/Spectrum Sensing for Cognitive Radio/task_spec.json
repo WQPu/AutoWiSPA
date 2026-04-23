@@ -1,0 +1,126 @@
+{
+  "problem_understanding": {
+    "task_category": "binary hypothesis detection for spectrum sensing",
+    "problem_statement": "Design and validate a single-user, single-antenna Neyman-Pearson spectrum sensor that observes N=256 complex baseband samples per sensing interval and decides licensed-band occupancy between H0 (idle) and H1 (occupied). Assume AWGN with frequency-flat effects already compensated. Enforce a false-alarm constraint P_fa <= 0.01, compute theoretical P_d versus SNR from -20 dB to 0 dB, and verify the theory with Monte Carlo simulation.",
+    "exploitable_structure": "Under i.i.d. circular-complex Gaussian noise, the sufficient statistic is sample energy. The normalized energy statistic is chi-square/gamma distributed under H0 and scaled under H1, enabling closed-form NP threshold design and theoretical P_d via generalized Marcum-Q (or incomplete-gamma equivalent)."
+  },
+  "system_model": {
+    "waveform": "custom",
+    "antenna_config": {
+      "num_tx": 1,
+      "num_rx": 1,
+      "array_type": "other",
+      "additional_elements": {}
+    },
+    "channel_model": "AWGN",
+    "operating_conditions": {
+      "carrier_freq_ghz": null,
+      "bandwidth_mhz": null,
+      "mobility_kmh": null
+    },
+    "additional_params": {
+      "num_samples_per_interval": 256,
+      "hypotheses": {
+        "H0": "y[n]=w[n], w[n]~CN(0,sigma_w2)",
+        "H1": "y[n]=s[n]+w[n], s[n]~CN(0,gamma*sigma_w2), effective SNR=gamma"
+      },
+      "detector_type": "Neyman-Pearson energy detector (radiometer)",
+      "test_statistic": "U=(1/sigma_w2)*sum_{n=1}^{N}|y[n]|^2",
+      "threshold_setting": "eta=0.5*chi2inv(1-P_fa,2N), P_fa=0.01, N=256",
+      "decision_rule": "decide H1 if U>eta else H0",
+      "theoretical_pd_expression": "P_d(gamma)=Q_N(sqrt(2N*gamma),sqrt(2*eta)) (equivalently survival function of noncentral chi-square with dof=2N and noncentrality=2N*gamma)",
+      "snr_sweep_db": [
+        -20,
+        -18,
+        -16,
+        -14,
+        -12,
+        -10,
+        -8,
+        -6,
+        -4,
+        -2,
+        0
+      ],
+      "monte_carlo": {
+        "num_trials_per_snr": 100000,
+        "noise_model": "complex Gaussian",
+        "signal_model_under_H1": "complex Gaussian primary signal with power set by SNR",
+        "estimated_outputs": [
+          "empirical_P_fa",
+          "empirical_P_d",
+          "theoretical_P_d_overlay",
+          "roc_curve",
+          "runtime_ms_per_interval"
+        ],
+        "random_seed": 2026
+      },
+      "roc_configuration": {
+        "fixed_pfa_points": [
+          0.01,
+          0.05,
+          0.1
+        ],
+        "generate_full_roc": true
+      },
+      "robustness_checks": {
+        "enable_noise_uncertainty_test": true,
+        "noise_power_mismatch_db": [
+          -1.0,
+          0.0,
+          1.0
+        ],
+        "note": "Used as secondary analysis to expose ED sensitivity; core objective remains ideal-AWGN NP validation."
+      }
+    },
+    "channel_properties": [
+      "additive_white_gaussian_noise",
+      "frequency_flat",
+      "flat_fading_compensated",
+      "memoryless_within_interval"
+    ]
+  },
+  "performance_targets": {
+    "primary_metric": "P_d_at_P_fa_0.01",
+    "secondary_metrics": [
+      "P_fa_constraint_satisfaction",
+      "theory_simulation_Pd_gap",
+      "ROC_AUC",
+      "complexity_ops_per_interval",
+      "runtime_ms_per_interval"
+    ],
+    "theoretical_bound": "Neyman-Pearson optimality for fixed P_fa when using energy as the chosen test statistic under AWGN with known noise variance.",
+    "baseline_algorithms": [
+      "NP energy detector with analytic threshold (primary baseline)",
+      "Monte Carlo-calibrated CFAR energy threshold (consistency baseline)",
+      "Cyclostationary feature detector (optional robustness/complexity reference only)"
+    ],
+    "target_value": {
+      "P_fa_max": 0.01,
+      "min_snr_db_for_evaluation": -10,
+      "max_abs_theory_empirical_pd_gap": 0.02
+    }
+  },
+  "constraints": {
+    "complexity": "O(N) operations per sensing interval for the primary detector; no matrix inversion; real-time feasible on low-compute nodes.",
+    "data_availability": "no_training_data"
+  },
+  "design_preferences": {
+    "approach": "classical_signal_processing",
+    "interpretability": "high",
+    "online_adaptation": false
+  },
+  "assumptions_made": [
+    "Primary-user waveform structure is not exploited in the main detector; non-coherent energy detection is selected for model-agnostic sensing.",
+    "Noise variance sigma_w2 is known or accurately pre-estimated from calibration/quiet windows for threshold computation.",
+    "Samples are i.i.d. within each sensing interval and free of colored interference unless explicitly stressed in robustness checks.",
+    "Primary detector evaluation is single-interval (fixed-sample) NP testing; sequential quickest detection is out of scope for the core task.",
+    "SNR sweep uses 2 dB spacing from -20 dB to 0 dB to resolve low-SNR behavior while keeping simulation cost practical.",
+    "Monte Carlo trial count of 1e5 per SNR is chosen to stabilize P_fa=0.01 tail estimation and support theory-vs-simulation agreement checks.",
+    "Cyclostationary detection is included only as an optional comparison baseline to contextualize robustness/complexity trade-offs; it is not the primary objective.",
+    "Reliability at -10 dB is treated as a mandatory reporting point, not a guaranteed minimum P_d requirement unless separately specified."
+  ],
+  "task_category": "detection",
+  "task_description": "Implement a fixed-sample Neyman-Pearson energy detector for single-user spectrum sensing with N=256 complex samples per interval under AWGN. Set threshold for P_fa<=0.01, compute closed-form theoretical P_d over SNR in [-20,0] dB, and validate via Monte Carlo with consistent ROC and complexity reporting. Include optional robustness and comparative baselines without changing the main objective.",
+  "exploitable_structure": "Binary hypothesis testing with sufficient statistic U=(1/sigma_w2)sum|y[n]|^2. Under H0, U is central chi-square (2N dof); under H1, U is noncentral chi-square with noncentrality linked to SNR. This supports exact threshold inversion and analytic P_d curves for direct simulation cross-check."
+}

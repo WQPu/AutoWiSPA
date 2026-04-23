@@ -1,0 +1,118 @@
+{
+  "status": "error",
+  "stage": "execution",
+  "error_log": "Traceback (most recent call last):\n  File \"/var/folders/6_/rnpvv4kx1y956gsx2k4mrxv00000gn/T/autowisp_36nes2w4/_runner.py\", line 22, in <module>\n    results = module.run_evaluation(eval_config)\n              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/var/folders/6_/rnpvv4kx1y956gsx2k4mrxv00000gn/T/autowisp_36nes2w4/evaluation/evaluate.py\", line 4, in run_evaluation\n    return run_notebook(eval_config)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/var/folders/6_/rnpvv4kx1y956gsx2k4mrxv00000gn/T/autowisp_36nes2w4/notebook_runtime.py\", line 46, in run_notebook\n    exec(compile(block['source'], f\"notebook::{block['role']}\", 'exec'), namespace, namespace)\n  File \"notebook::execution\", line 36, in <module>\n  File \"notebook::evaluation_logic\", line 52, in run_evaluation\nValueError: too many values to unpack (expected 4)\n",
+  "execution_time": 2.4195899963378906,
+  "eval_config": {
+    "variable_points": [
+      "0",
+      "2",
+      "4",
+      "6",
+      "8",
+      "10",
+      "12",
+      "14",
+      "16",
+      "18",
+      "20",
+      "22",
+      "24",
+      "26",
+      "28",
+      "30"
+    ],
+    "num_trials": 1000,
+    "primary_metrics": [
+      "RMSE_deg",
+      "ResolutionProbability",
+      "RMSE_to_CRB_ratio"
+    ],
+    "baseline_methods": [
+      "Root-MUSIC",
+      "ESPRIT",
+      "Deterministic Maximum Likelihood",
+      "Stochastic Maximum Likelihood"
+    ],
+    "system_model": {
+      "waveform": "custom_narrowband",
+      "antenna_config": {
+        "num_tx": null,
+        "num_rx": 8,
+        "array_type": "ULA",
+        "additional_elements": {}
+      },
+      "channel_model": "free_space_los",
+      "operating_conditions": {
+        "carrier_freq_ghz": null,
+        "bandwidth_mhz": null,
+        "mobility_kmh": 0
+      },
+      "additional_params": {
+        "num_sources": 2,
+        "num_snapshots": 200,
+        "inter_element_spacing_lambda": 0.5,
+        "source_separation_deg": 15,
+        "snr_nominal_db": 20,
+        "snr_sweep_db": [
+          0,
+          30
+        ],
+        "num_sources_known": true,
+        "recommended_algorithm": "MUSIC",
+        "pseudospectrum_scan_range_deg": [
+          -90,
+          90
+        ],
+        "pseudospectrum_grid_step_deg": 0.1,
+        "rmse_monte_carlo_trials": 1000,
+        "resolution_success_rule": "exactly two dominant peaks, each within +/-2 deg of its nearest true DoA",
+        "source_angles_deg_default": [
+          -7.5,
+          7.5
+        ],
+        "snr_step_db": 2,
+        "snr_definition": "per_sensor_input_snr",
+        "baseline_algorithms_ordered": [
+          "Root-MUSIC",
+          "ESPRIT",
+          "Deterministic Maximum Likelihood",
+          "Stochastic Maximum Likelihood"
+        ],
+        "resolution_probability_target": 0.9,
+        "threshold_gap_rule": "threshold region flagged when RMSE exceeds 3x stochastic CRB"
+      },
+      "channel_properties": [
+        "narrowband",
+        "far_field",
+        "plane_wave",
+        "spatially_uncorrelated_sources",
+        "quasi_static_over_snapshots",
+        "awgn"
+      ]
+    },
+    "performance_targets": {
+      "primary_metric": "RMSE_deg",
+      "secondary_metrics": [
+        "resolution_threshold_snr_db",
+        "probability_of_resolution",
+        "pseudospectrum_peak_separation_deg",
+        "runtime_per_trial_ms",
+        "rmse_to_crb_ratio"
+      ],
+      "theoretical_bound": "Stochastic CRB for two-source ULA DoA estimation; optional WWB-informed interpretation for low-SNR threshold behavior",
+      "baseline_algorithms": [
+        "MUSIC",
+        "Root-MUSIC",
+        "ESPRIT",
+        "Deterministic Maximum Likelihood",
+        "Stochastic Maximum Likelihood"
+      ],
+      "target_value": null
+    },
+    "constraints": {
+      "complexity": "offline_simulation_feasible; eigendecomposition-based methods preferred over heavy iterative solvers for primary sweep",
+      "data_availability": "no_training_data"
+    }
+  }
+}

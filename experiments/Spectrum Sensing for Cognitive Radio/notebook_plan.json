@@ -1,0 +1,62 @@
+[
+  {
+    "role": "title",
+    "cell_type": "markdown",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "problem_setup",
+    "cell_type": "markdown",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "modeling_summary",
+    "cell_type": "markdown",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "imports_setup",
+    "cell_type": "code",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "data_generation",
+    "cell_type": "code",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "algorithm_core",
+    "cell_type": "code",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "evaluation_logic",
+    "cell_type": "code",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "execution",
+    "cell_type": "code",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "plotting",
+    "cell_type": "code",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  },
+  {
+    "role": "result_notes",
+    "cell_type": "markdown",
+    "purpose": "Auto-filled notebook contract requirement",
+    "must_include": []
+  }
+]

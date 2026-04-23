@@ -1,0 +1,350 @@
+{
+  "objective": "Maximize detection probability under false-alarm constraint using NP energy detection: \\(\\max_{\\eta} P_d(\\eta,\\gamma)\\;\\text{s.t.}\\;P_{fa}(\\eta)\\le\\alpha,\\alpha=0.01\\).",
+  "inputs": [
+    {
+      "name": "N",
+      "shape": "scalar",
+      "dtype": "int",
+      "description": "Samples per sensing interval, fixed at 256."
+    },
+    {
+      "name": "pfa_points",
+      "shape": "(3,)",
+      "dtype": "float",
+      "description": "False alarm targets [0.01, 0.05, 0.1]."
+    },
+    {
+      "name": "snr_db_grid",
+      "shape": "(11,)",
+      "dtype": "float",
+      "description": "SNR sweep in dB from -20 to 0 with 2 dB spacing."
+    },
+    {
+      "name": "num_trials_per_snr",
+      "shape": "scalar",
+      "dtype": "int",
+      "description": "Monte Carlo trials per SNR, default 100000."
+    },
+    {
+      "name": "sigma_w2_assumed",
+      "shape": "scalar",
+      "dtype": "float",
+      "description": "Assumed noise variance for normalization and thresholding."
+    },
+    {
+      "name": "noise_power_mismatch_db_grid",
+      "shape": "(3,)",
+      "dtype": "float",
+      "description": "Mismatch test grid [-1, 0, +1] dB."
+    },
+    {
+      "name": "random_seed",
+      "shape": "scalar",
+      "dtype": "int",
+      "description": "Reproducible RNG seed (2026)."
+    }
+  ],
+  "outputs": [
+    {
+      "name": "eta_map",
+      "shape": "(num_pfa_points,)",
+      "dtype": "float",
+      "description": "NP thresholds for each Pfa target."
+    },
+    {
+      "name": "pd_theory",
+      "shape": "(num_snr, num_pfa_points)",
+      "dtype": "float",
+      "description": "Theoretical Pd curves from chi-square survival function."
+    },
+    {
+      "name": "pfa_emp",
+      "shape": "(num_mismatch, num_pfa_points)",
+      "dtype": "float",
+      "description": "Empirical false-alarm probabilities."
+    },
+    {
+      "name": "pd_emp",
+      "shape": "(num_snr, num_mismatch, num_pfa_points)",
+      "dtype": "float",
+      "description": "Empirical detection probabilities."
+    },
+    {
+      "name": "pd_gap",
+      "shape": "(num_snr,)",
+      "dtype": "float",
+      "description": "Absolute theory-simulation gap at mismatch 0 dB and Pfa=0.01."
+    },
+    {
+      "name": "roc_curves",
+      "shape": "dict",
+      "dtype": "object",
+      "description": "ROC arrays (pfa,pd) and AUC for selected SNR points."
+    },
+    {
+      "name": "runtime_ms_per_interval",
+      "shape": "scalar",
+      "dtype": "float",
+      "description": "Measured execution time normalized per interval."
+    },
+    {
+      "name": "complexity_ops_per_interval",
+      "shape": "scalar",
+      "dtype": "float",
+      "description": "Operation-count proxy c*N for ED."
+    }
+  ],
+  "pipeline": [
+    {
+      "step": 1,
+      "name": "Initialize constants and grids",
+      "purpose": "Prepare fixed experiment dimensions and SNR linear grid.",
+      "formula_latex": "N=256,\\;\\alpha=0.01,\\;\\mathcal{G}_{\\mathrm{dB}}=\\{-20,-18,\\dots,0\\},\\;\\gamma_i=10^{\\mathcal{G}_{\\mathrm{dB}}[i]/10},\\;i=1,\\dots,11,\\;T=100000",
+      "implementation_hint": "Use np.array for dB grid and gamma_grid = 10**(snr_db/10)."
+    },
+    {
+      "step": 2,
+      "name": "Set RNG and noise reference",
+      "purpose": "Fix reproducibility and define assumed/true-noise mismatch scenarios.",
+      "formula_latex": "\\text{seed}=2026,\\;\\sigma_{w,\\mathrm{assumed}}^2>0\\;\\text{(fixed reference)},\\;\\Delta_{\\nu}\\in\\{-1,0,1\\}\\;\\text{dB}",
+      "implementation_hint": "Use np.random.default_rng(seed)."
+    },
+    {
+      "step": 3,
+      "name": "Compute NP thresholds",
+      "purpose": "Obtain analytic thresholds satisfying each Pfa target.",
+      "formula_latex": "\\eta(\\alpha_m)=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha_m),\\;\\alpha_m\\in\\{0.01,0.05,0.1\\}",
+      "implementation_hint": "Use scipy.stats.chi2.ppf(1-alpha_m, df=2*N)/2."
+    },
+    {
+      "step": 4,
+      "name": "Compute theoretical Pd",
+      "purpose": "Generate closed-form reference curves over SNR and Pfa points.",
+      "formula_latex": "P_d^{\\mathrm{th}}(\\gamma_i;\\alpha_m)=1-F_{\\chi^2_{2N}}\\!\\left(\\frac{2\\eta(\\alpha_m)}{1+\\gamma_i}\\right),\\;i=1,\\dots,11",
+      "implementation_hint": "Use scipy.stats.chi2.cdf with vectorized broadcasting."
+    },
+    {
+      "step": 5,
+      "name": "Generate H0 Monte Carlo samples",
+      "purpose": "Create noise-only intervals under each mismatch case.",
+      "formula_latex": "w_{t,n}^{(\\delta)}=\\sqrt{\\frac{\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(a_{t,n}+j b_{t,n}\\right),\\;a_{t,n},b_{t,n}\\overset{i.i.d.}{\\sim}\\mathcal{N}(0,1),\\;\\sigma_{w,\\mathrm{true}}^2(\\delta)=\\sigma_{w,\\mathrm{assumed}}^2\\cdot10^{\\delta/10}",
+      "implementation_hint": "Use rng.standard_normal((T,N)) for real and imag parts, then combine."
+    },
+    {
+      "step": 6,
+      "name": "Generate H1 Monte Carlo samples per SNR",
+      "purpose": "Create occupied-band intervals with Gaussian signal plus noise.",
+      "formula_latex": "s_{t,n}^{(i,\\delta)}=\\sqrt{\\frac{\\gamma_i\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(c_{t,n}+j d_{t,n}\\right),\\;y_{t,n}^{(1,i,\\delta)}=s_{t,n}^{(i,\\delta)}+w_{t,n}^{(\\delta)}",
+      "implementation_hint": "Vectorize over trials and samples; loop only over SNR points."
+    },
+    {
+      "step": 7,
+      "name": "Compute normalized energy statistics",
+      "purpose": "Reduce each interval to the sufficient scalar statistic.",
+      "formula_latex": "U_t^{(0,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|w_{t,n}^{(\\delta)}\\right|^2,\\quad U_t^{(1,i,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|y_{t,n}^{(1,i,\\delta)}\\right|^2",
+      "implementation_hint": "Use np.abs(X)**2 then np.sum(axis=1)."
+    },
+    {
+      "step": 8,
+      "name": "Apply NP decision rule",
+      "purpose": "Convert statistics to binary occupancy decisions for each threshold.",
+      "formula_latex": "d_t^{(0,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(0,\\delta)}>\\eta(\\alpha_m)\\},\\quad d_t^{(1,i,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(1,i,\\delta)}>\\eta(\\alpha_m)\\}",
+      "implementation_hint": "Use boolean comparisons and astype(np.float64) for averaging."
+    },
+    {
+      "step": 9,
+      "name": "Estimate empirical Pfa/Pd and theory gap",
+      "purpose": "Compute Monte Carlo performance and check agreement with theory.",
+      "formula_latex": "\\widehat{P}_{fa}(\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(0,\\delta,\\alpha_m)},\\quad \\widehat{P}_{d}(i,\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(1,i,\\delta,\\alpha_m)},\\quad \\Delta_{pd}(i)=\\left|\\widehat{P}_{d}(i,0,0.01)-P_d^{\\mathrm{th}}(\\gamma_i;0.01)\\right|",
+      "implementation_hint": "Use np.mean over trial axis and np.abs difference."
+    },
+    {
+      "step": 10,
+      "name": "Generate full ROC and AUC",
+      "purpose": "Produce threshold-swept operating curves and scalar AUC summaries.",
+      "formula_latex": "\\eta_r\\in\\mathcal{E},\\;P_{fa,r}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(0,0)}>\\eta_r\\},\\;P_{d,r}(i)=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(1,i,0)}>\\eta_r\\},\\;\\mathrm{AUC}(i)=\\int_{0}^{1}P_d(P_{fa};i)\\,dP_{fa}",
+      "implementation_hint": "Use np.quantile for threshold grid, vectorized comparisons, and np.trapz for AUC."
+    },
+    {
+      "step": 11,
+      "name": "Measure runtime and operation count",
+      "purpose": "Report practical efficiency and complexity compliance.",
+      "formula_latex": "\\text{runtime\\_ms\\_per\\_interval}=1000\\cdot\\frac{t_{\\mathrm{end}}-t_{\\mathrm{start}}}{N_{\\mathrm{intervals}}},\\quad \\mathrm{ops}_{\\mathrm{ED}}\\approx c\\,N\\;\\Rightarrow\\;\\mathcal{O}(N)",
+      "implementation_hint": "Use time.perf_counter and simple scalar arithmetic."
+    }
+  ],
+  "core_assumptions": [
+    "i.i.d. circular-complex Gaussian noise and Gaussian primary signal model within each interval.",
+    "Known sigma_w2 for main NP threshold design.",
+    "Single-interval fixed-sample detection scope (not sequential quickest detection)."
+  ],
+  "implementation_constraints": [
+    "Primary detector per-interval complexity must remain O(N).",
+    "No external module files; all code in notebook cells.",
+    "Vectorized Monte Carlo generation to keep 1e5-trial sweeps practical."
+  ],
+  "failure_modes": [
+    "Normalization mismatch (factor-2 chi-square scaling) causing false theory/simulation discrepancy.",
+    "Insufficient trials or poor RNG handling biasing tail Pfa estimates near 0.01.",
+    "Noise uncertainty causing Pfa inflation/deflation relative to target."
+  ],
+  "evaluation_contract": {
+    "primary_metrics": [
+      "P_d_at_P_fa_0.01",
+      "theory_simulation_Pd_gap",
+      "P_fa_constraint_satisfaction"
+    ],
+    "baseline_methods": [
+      "NP energy detector with analytic threshold",
+      "Monte Carlo-calibrated CFAR energy threshold",
+      "Neyman-Pearson optimality benchmark",
+      "Cyclostationary feature detector (optional reference)"
+    ],
+    "required_result_keys": [
+      "algorithm",
+      "elapsed_sec",
+      "performance_data"
+    ]
+  },
+  "architecture": {
+    "name": "Notebook Solution",
+    "strategy_label": "Notebook Solution",
+    "summary": "Single-path notebook execution plan"
+  },
+  "algorithm_spec": {
+    "objective": "Implement a fixed-sample Neyman-Pearson energy detector for single-user spectrum sensing with N=256 complex samples per interval under AWGN. Set threshold for P_fa<=0.01, compute closed-form theoretical P_d over SNR in [-20,0] dB, and validate via Monte Carlo with consistent ROC and complexity reporting. Include optional robustness and comparative baselines without changing the main objective.",
+    "inputs": [],
+    "outputs": [],
+    "pipeline": [],
+    "core_assumptions": [],
+    "implementation_constraints": [],
+    "failure_modes": [],
+    "evaluation_contract": {
+      "required_result_keys": [
+        "algorithm",
+        "elapsed_sec",
+        "performance_data",
+        "report_assets"
+      ],
+      "baseline_methods": []
+    }
+  },
+  "evaluation_plan": {
+    "independent_variable": "Operating Point",
+    "variable_points": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "num_monte_carlo": 20,
+    "primary_metrics": [
+      {
+        "name": "P_d_at_P_fa_0.01",
+        "description": "Primary task metric P_d_at_P_fa_0.01"
+      }
+    ],
+    "secondary_metrics": [],
+    "baseline_methods": [],
+    "plots": [],
+    "sensitivity_factors": [],
+    "boundary_conditions": []
+  },
+  "notebook_plan": [
+    {
+      "role": "title",
+      "cell_type": "markdown",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "problem_setup",
+      "cell_type": "markdown",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "modeling_summary",
+      "cell_type": "markdown",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "imports_setup",
+      "cell_type": "code",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "data_generation",
+      "cell_type": "code",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "algorithm_core",
+      "cell_type": "code",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "evaluation_logic",
+      "cell_type": "code",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "execution",
+      "cell_type": "code",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "plotting",
+      "cell_type": "code",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    },
+    {
+      "role": "result_notes",
+      "cell_type": "markdown",
+      "purpose": "Auto-filled notebook contract requirement",
+      "must_include": []
+    }
+  ],
+  "execution_contract": {
+    "primary_metric": "P_d_at_P_fa_0.01",
+    "baseline_methods": [],
+    "independent_variable": "Operating Point",
+    "variable_points": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "num_monte_carlo": 20,
+    "required_roles": [
+      "title",
+      "problem_setup",
+      "modeling_summary",
+      "imports_setup",
+      "data_generation",
+      "algorithm_core",
+      "evaluation_logic",
+      "execution",
+      "plotting",
+      "result_notes"
+    ],
+    "required_result_keys": [
+      "algorithm",
+      "elapsed_sec",
+      "performance_data",
+      "report_assets"
+    ],
+    "comparison_required": false,
+    "algorithm_steps": [],
+    "implementation_constraints": []
+  }
+}

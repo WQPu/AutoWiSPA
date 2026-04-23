@@ -1,0 +1,4390 @@
+[
+  {
+    "stage": "S1",
+    "title": "Problem analysis result",
+    "summary_lines": [
+      "Task type: detection",
+      "Waveform: custom",
+      "Primary metric: P_d_at_P_fa_0.01",
+      "Spec complete: True"
+    ],
+    "payload": {
+      "problem_understanding": {
+        "task_category": "detection",
+        "problem_statement": "A single-antenna secondary user observes N=256 complex baseband samples per sensing interval and must decide spectrum occupancy of a licensed band. The decision is binary hypothesis testing under AWGN with flat fading effects assumed compensated: H0: y[n]=w[n] (idle), H1: y[n]=s[n]+w[n] (occupied). The detector should enforce P_fa <= 0.01, characterize theoretical P_d versus SNR from -20 dB to 0 dB, and verify theory using Monte Carlo simulation.",
+        "exploitable_structure": "i.i.d. circular-complex Gaussian noise; sufficient statistic is sample energy; under H0/H1 the energy statistic follows scaled Gamma (equivalently chi-square) distributions enabling closed-form Neyman-Pearson threshold and P_d expressions."
+      },
+      "system_model": {
+        "waveform": "custom",
+        "antenna_config": {
+          "num_tx": 1,
+          "num_rx": 1,
+          "array_type": "other",
+          "additional_elements": {}
+        },
+        "channel_model": "AWGN",
+        "operating_conditions": {
+          "carrier_freq_ghz": null,
+          "bandwidth_mhz": null,
+          "mobility_kmh": null
+        },
+        "additional_params": {
+          "num_samples_per_interval": 256,
+          "hypotheses": {
+            "H0": "y[n]=w[n], w[n]~CN(0,sigma_w2)",
+            "H1": "y[n]=s[n]+w[n], effective SNR=gamma"
+          },
+          "detector_type": "Neyman-Pearson energy detector (radiometer)",
+          "test_statistic": "U=(1/sigma_w2)*sum_{n=1}^{N}|y[n]|^2",
+          "threshold_setting": "eta=0.5*chi2inv(1-P_fa, 2N), with P_fa=0.01 and N=256",
+          "decision_rule": "decide H1 if U>eta else H0",
+          "theoretical_pd_expression": "P_d(gamma)=Q_gamma(N, eta/(1+gamma)) where gamma=10^(SNR_dB/10)",
+          "snr_sweep_db": [
+            -20,
+            -18,
+            -16,
+            -14,
+            -12,
+            -10,
+            -8,
+            -6,
+            -4,
+            -2,
+            0
+          ],
+          "monte_carlo": {
+            "num_trials_per_snr": 100000,
+            "noise_model": "complex Gaussian",
+            "signal_model_under_H1": "complex Gaussian primary signal with power set by SNR",
+            "estimated_outputs": [
+              "empirical_P_fa",
+              "empirical_P_d",
+              "theoretical_P_d_overlay"
+            ]
+          }
+        },
+        "channel_properties": [
+          "additive_white_gaussian_noise",
+          "frequency_flat",
+          "flat_fading_compensated",
+          "memoryless_within_interval"
+        ]
+      },
+      "performance_targets": {
+        "primary_metric": "P_d_at_P_fa_0.01",
+        "secondary_metrics": [
+          "P_fa_constraint_satisfaction",
+          "ROC_AUC",
+          "complexity_ops_per_interval"
+        ],
+        "theoretical_bound": "Neyman-Pearson optimality for fixed P_fa with unknown signal structure in AWGN (energy detector).",
+        "baseline_algorithms": "auto",
+        "target_value": {
+          "P_fa_max": 0.01,
+          "min_snr_db_for_evaluation": -10
+        }
+      },
+      "constraints": {
+        "complexity": "O(N) operations per sensing interval; no matrix inversion; suitable for real-time single-user spectrum sensing.",
+        "data_availability": "no_training_data"
+      },
+      "design_preferences": {
+        "approach": "classical_signal_processing",
+        "interpretability": "high",
+        "online_adaptation": false
+      },
+      "assumptions_made": [
+        "Primary-user transmit signal structure is not exploited; non-coherent energy detection is selected as the robust default.",
+        "Noise variance sigma_w2 is known or accurately estimated from calibration/quiet periods for threshold computation.",
+        "Samples are i.i.d. within each sensing interval (no colored noise, no interference uncertainty).",
+        "Single transmit stream for the primary user is assumed for system-model completeness; detector design is agnostic to modulation details.",
+        "SNR sweep uses 2 dB steps from -20 dB to 0 dB for theoretical and Monte Carlo curve generation.",
+        "Reliability at -10 dB is interpreted as an evaluation requirement (not a guaranteed numeric P_d target unless separately specified)."
+      ],
+      "task_category": "detection",
+      "task_description": "A single-antenna secondary user observes N=256 complex baseband samples per sensing interval and must decide spectrum occupancy of a licensed band. The decision is binary hypothesis testing under AWGN with flat fading effects assumed compensated: H0: y[n]=w[n] (idle), H1: y[n]=s[n]+w[n] (occupied). The detector should enforce P_fa <= 0.01, characterize theoretical P_d versus SNR from -20 dB to 0 dB, and verify theory using Monte Carlo simulation.",
+      "exploitable_structure": "i.i.d. circular-complex Gaussian noise; sufficient statistic is sample energy; under H0/H1 the energy statistic follows scaled Gamma (equivalently chi-square) distributions enabling closed-form Neyman-Pearson threshold and P_d expressions."
+    }
+  },
+  {
+    "stage": "S2",
+    "title": "Knowledge retrieval and refinement",
+    "summary_lines": [
+      "Search query: single-antenna AWGN binary hypothesis testing low-SNR detection probability closed-form cyclostationary feature-based spectrum sensing Monte Carlo validation ROC curves",
+      "Papers found: 4",
+      "Refined task metric: P_d_at_P_fa_0.01",
+      "Refined waveform: custom"
+    ],
+    "payload": {
+      "knowledge": {
+        "relevant_algorithms": [
+          "Energy Detection",
+          "CFAR Thresholding",
+          "Monte Carlo Simulation",
+          "Cyclostationary Feature Detection",
+          "Binary Hypothesis Testing"
+        ],
+        "relevant_papers": [
+          {
+            "title": "Spectrum Sensing Using Binary Hypothesis Test Comparing with Energy Detection Based Method to Improve the Probability of Detection",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "P. Niranjan Reddy",
+              "P. Shyamala Bharathi"
+            ],
+            "year": "2023",
+            "source": "CrossRef(2023 International Conference )",
+            "doi": "10.1109/accai58221.2023.10199635",
+            "url": "https://doi.org/10.1109/accai58221.2023.10199635",
+            "citation_count": 0
+          },
+          {
+            "title": "A Blind and Soft Fusion Detector Using Monte Carlo and AWGN Spectrum Sensing Techniques",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Sahas Jaiswal",
+              "Amit Baghel"
+            ],
+            "year": "2020",
+            "source": "CrossRef(2020 5th International Confere)",
+            "doi": "10.1109/icces48766.2020.9138072",
+            "url": "https://doi.org/10.1109/icces48766.2020.9138072",
+            "citation_count": 0
+          },
+          {
+            "title": "Multiple Energy Detection vs Cyclostationary Feature Detection Spectrum Sensing Technique",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Ashish Bagwari",
+              "Geetam Singh Tomar"
+            ],
+            "year": "2014",
+            "source": "CrossRef(2014 Fourth International Conf)",
+            "doi": "10.1109/csnt.2014.43",
+            "url": "https://doi.org/10.1109/csnt.2014.43",
+            "citation_count": 40
+          },
+          {
+            "title": "Cyclostationary Feature Based Quickest Spectrum Sensing in Cognitive Radio Systems",
+            "abstract": "",
+            "abstract_snippet": "",
+            "authors": [
+              "Husheng Li"
+            ],
+            "year": "2010",
+            "source": "CrossRef(2010 IEEE 72nd Vehicular Techn)",
+            "doi": "10.1109/vetecf.2010.5594270",
+            "url": "https://doi.org/10.1109/vetecf.2010.5594270",
+            "citation_count": 9
+          }
+        ],
+        "design_insights": "Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking... (8s elapsed)Thinking... (9s elapsed)Thinking... (10s elapsed)Thinking... (11s elapsed)Thinking... (12s elapsed)Thinking... (13s elapsed)## 1) **Core Technical Roadmap**\n\nGiven the retrieved set, the technical landscape is strongly **classical statistical detection for cognitive-radio spectrum sensing**, not deep learning. From titles alone (no abstracts available), the papers cluster into four frameworks:\n\n### A. Binary hypothesis testing / energy-based Neyman–Pearson detection\n- Core model:\n  \\[\n  \\mathcal{H}_0: r[n] = w[n], \\qquad\n  \\mathcal{H}_1: r[n] = s[n] + w[n]\n  \\]\n- Canonical statistic (energy detector):\n  \\[\n  T_{\\text{ED}} = \\frac{1}{N}\\sum_{n=0}^{N-1} |r[n]|^2\n  \\]\n- Decision: \\(T_{\\text{ED}} \\gtrless_{\\mathcal{H}_0}^{\\mathcal{H}_1} \\lambda\\), where \\(\\lambda\\) is chosen for target \\(P_{\\mathrm{FA}}\\).\n- Represented by [P1], [P3].\n\n### B. Multi-observation / fusion-based sensing (blind + soft combining)\n- Multiple local statistics are fused centrally.\n- “Blind” usually implies low reliance on exact priors/channel/noise parameters.\n- “Soft fusion” uses real-valued local test statistics rather than 1-bit hard decisions.\n- Monte Carlo often used to calibrate fusion thresholds/weights under uncertain distributions.\n- Represented by [P2].\n\n### C. Cyclostationary feature detection (CFD)\n- Uses periodicity in modulated signals (symbol rate, carrier offsets) that noise lacks.\n- Statistic based on cyclic autocorrelation/spectral correlation:\n  \\[\n  R_x^\\alpha(\\tau)=\\mathbb{E}\\!\\left[x[n+\\tau]x^*[n-\\tau]e^{-j2\\pi \\alpha n}\\right]\n  \\]\n- More robust than energy detection under noise uncertainty/low SNR, but higher computational burden.\n- Represented by [P3], [P4].\n\n### D. Quickest (sequential) sensing\n- Detect primary-user appearance quickly while controlling false alarm rate.\n- Typical formulations: SPRT/CUSUM-like sequential tests.\n- Optimize sensing delay subject to \\(\\mathbb{P}_{\\mathrm{FA}}\\) constraints.\n- Represented by [P4].\n\n---\n\n## 2) **Key Innovation Extraction** (title-derived, with uncertainty due missing abstracts)\n\n> Since abstracts are unavailable, the points below are inferred from the titles and known literature patterns.\n\n### [P1] *Spectrum Sensing Using Binary Hypothesis Test Comparing with Energy Detection...* (2023)\n1. **Explicit NP-style binary test framing** likely contrasted against plain ED thresholding, potentially improving \\(P_D\\) at fixed \\(P_{FA}\\). [P1]\n2. **Comparative methodology**: likely demonstrates where classical ED underperforms and how modified hypothesis-test design improves detectability. [P1]\n\n### [P2] *A Blind and Soft Fusion Detector Using Monte Carlo and AWGN Spectrum Sensing Techniques* (2020)\n1. **Blind soft fusion architecture**: combining soft local metrics without strong model assumptions (e.g., uncertain channel/noise). [P2]\n2. **Monte Carlo-assisted calibration** in AWGN conditions: likely used to tune fusion weights/thresholds and characterize operating curves. [P2]\n\n### [P3] *Multiple Energy Detection vs Cyclostationary Feature Detection...* (2014)\n1. **Head-to-head comparison** of multi-energy strategies and CFD, likely exposing trade-off between simplicity (ED) and robustness (CFD) at low SNR. [P3]\n2. **“Multiple energy detection” concept**: may involve multiple windows/subbands/sensors to reduce variance and improve reliability over single ED. [P3]\n\n### [P4] *Cyclostationary Feature Based Quickest Spectrum Sensing...* (2010)\n1. **Sequential quickest detection + cyclostationary feature** coupling: detect change quickly using robust cyclostationary statistics. [P4]\n2. **Delay-aware sensing objective**: focuses not just ROC but also expected detection delay under false-alarm constraints. [P4]\n\n---\n\n## 3) **Recommended Algorithm Framework** (for this task: detection, 1x1 SISO, notebook-first)\n\n### **Top candidate #1: Two-stage detector (Energy pre-screen + Cyclostationary confirm)**\nWhy this is strong:\n- Matches [P3]/[P4] insights: ED is cheap and fast; CFD is robust.\n- For 1x1 systems (no spatial diversity), feature robustness matters at low SNR.\n- Easy to implement in NumPy without special libraries.\n\nSuggested flow:\n1. Compute \\(T_{\\text{ED}}\\) over short window.\n2. If near/above pre-threshold, run CFD over same or slightly longer window.\n3. Final decision from CFD statistic to reduce false alarms from noise uncertainty.\n\nThis gives a good **accuracy/complexity compromise**.\n\n---\n\n### **Top candidate #2: Sequential energy/CFD statistic with CUSUM-like stopping**\nWhy:\n- Inspired by [P4] quickest sensing.\n- If your application is online sensing (detecting occupancy change), delay is key.\n- Can be done with lightweight incremental updates.\n\nGeneric sequential recursion:\n\\[\nS_k = \\max\\!\\big(0,\\; S_{k-1} + g(z_k)\\big), \\quad \\text{declare }\\mathcal{H}_1 \\text{ if } S_k > h\n\\]\nwhere \\(z_k\\) is per-frame ED or CFD metric, \\(g(\\cdot)\\) is score transformation.\n\nUse this if **latency** matters more than single-shot classification.\n\n---\n\n## 4) **Notebook Implementation Guidance**\n\n## A. Notebook narrative structure (recommended)\n\n1. **Problem setup**\n   - Define \\(\\mathcal{H}_0/\\mathcal{H}_1\\), SISO assumptions, AWGN channel.\n   - Explain metrics: \\(P_D\\), \\(P_{FA}\\), ROC, AUC, and (if sequential) average detection delay.\n\n2. **Signal and noise generation**\n   - NumPy-only synthetic signals (e.g., BPSK/QPSK or OFDM-like sequence).\n   - Sweep SNR across a range (e.g., \\(-20\\) to \\(0\\) dB).\n   - Use fixed seeds for reproducibility.\n\n3. **Baseline ED**\n   - Derive threshold for target \\(P_{FA}\\) (analytic approximation + empirical calibration).\n   - Plot ROC and \\(P_D\\) vs SNR.\n\n4. **Cyclostationary detector**\n   - Implement cyclic autocorrelation estimate for selected \\(\\alpha\\).\n   - Use test statistic like \\(\\max_{\\tau,\\alpha}|R_x^\\alpha(\\tau)|\\).\n   - Compare performance and runtime with ED.\n\n5. **(Optional) Two-stage fusion**\n   - Stage 1 ED gating; Stage 2 CFD confirmation.\n   - Show complexity/performance tradeoff.\n\n6. **(Optional) Quickest/sequential mode**\n   - Frame-wise updates; report false alarm rate and mean detection delay.\n\n7. **Conclusion**\n   - Regimes where ED wins (high SNR, low compute) vs CFD wins (low SNR, noise uncertainty).\n\n---\n\n## B. Executable experiment design (minimal but rigorous)\n\n- **Monte Carlo trials**: at least \\(10^3\\) per SNR point for stable ROC tails.\n- **SNR grid**: dense near low SNR where curves separate.\n- **Thresholding**:\n  - Fix \\(P_{FA}\\in\\{0.01,0.05,0.1\\}\\) and compute \\(P_D\\).\n  - Also full ROC by threshold sweep.\n- **Ablations**:\n  1. Sample size \\(N\\) impact.\n  2. Noise variance mismatch (e.g., \\(\\pm 1\\) dB uncertainty).\n  3. Two-stage vs single-stage.\n- **Complexity accounting**:\n  - Empirical runtime (ms per decision) using `time.perf_counter`.\n  - Big-\\(O\\) discussion: ED \\(O(N)\\), CFD usually \\(O(N\\log N)\\) or higher depending estimator.\n\n---\n\n## C. Result presentation (what to plot)\n\n1. ROC curves (ED vs CFD vs hybrid) at selected SNRs.\n2. \\(P_D\\) vs SNR at fixed \\(P_{FA}\\).\n3. Detection delay CDF or mean delay vs \\(P_{FA}\\) (if sequential).\n4. Runtime vs \\(N\\).\n5. Robustness plot under noise uncertainty (important for ED limitations).\n\n---\n\n## D. Practical NumPy implementation notes\n\n- Vectorize Monte Carlo computations; avoid Python loops where possible.\n- Preallocate arrays for statistics.\n- Use `np.fft.fft` for spectral operations in CFD.\n- Keep units consistent (linear vs dB).\n- Separate “simulation config” cell from algorithm cells for repeatability.\n\n---\n\n## 5) **Caveats**\n\n1. **No abstracts provided**  \n   Your extracted innovations are title-level inference; verify details from full texts before claiming exact novelty.\n\n2. **Energy detector SNR wall**  \n   With noise uncertainty, ED performance can saturate badly. Always include mismatch experiments.\n\n3. **CFD parameter sensitivity**  \n   Wrong cyclic frequencies \\(\\alpha\\), insufficient observation length, or poor lag selection can make CFD look unfairly weak.\n\n4. **Fair comparison discipline**\n   - Equal observation time / sample budget across methods.\n   - Same \\(P_{FA}\\) operating point when comparing \\(P_D\\).\n\n5. **Sequential test tuning**\n   - Poor threshold \\(h\\) causes either many false alarms or long delays.\n   - Must report both false alarms and delay, not one alone.\n\n6. **1x1 antenna constraint**\n   - No spatial combining gains; improvements must come from temporal/frequency feature engineering or fusion across windows/sensors (simulated).\n\n7. **Notebook policy alignment**\n   - Prefer pure NumPy/Matplotlib.\n   - Avoid heavy comms libraries unless absolutely needed.\n\n---\n\nIf you want, I can provide a **ready-to-run NumPy notebook skeleton** (cells + code) implementing:\n- ED baseline,\n- CFD baseline,\n- two-stage hybrid,\n- and optional sequential quickest variant with plots.",
+        "paper_search_query": "single-antenna AWGN binary hypothesis testing low-SNR detection probability closed-form cyclostationary feature-based spectrum sensing Monte Carlo validation ROC curves"
+      },
+      "task_spec": {
+        "problem_understanding": {
+          "task_category": "binary hypothesis detection for spectrum sensing",
+          "problem_statement": "Design and validate a single-user, single-antenna Neyman-Pearson spectrum sensor that observes N=256 complex baseband samples per sensing interval and decides licensed-band occupancy between H0 (idle) and H1 (occupied). Assume AWGN with frequency-flat effects already compensated. Enforce a false-alarm constraint P_fa <= 0.01, compute theoretical P_d versus SNR from -20 dB to 0 dB, and verify the theory with Monte Carlo simulation.",
+          "exploitable_structure": "Under i.i.d. circular-complex Gaussian noise, the sufficient statistic is sample energy. The normalized energy statistic is chi-square/gamma distributed under H0 and scaled under H1, enabling closed-form NP threshold design and theoretical P_d via generalized Marcum-Q (or incomplete-gamma equivalent)."
+        },
+        "system_model": {
+          "waveform": "custom",
+          "antenna_config": {
+            "num_tx": 1,
+            "num_rx": 1,
+            "array_type": "other",
+            "additional_elements": {}
+          },
+          "channel_model": "AWGN",
+          "operating_conditions": {
+            "carrier_freq_ghz": null,
+            "bandwidth_mhz": null,
+            "mobility_kmh": null
+          },
+          "additional_params": {
+            "num_samples_per_interval": 256,
+            "hypotheses": {
+              "H0": "y[n]=w[n], w[n]~CN(0,sigma_w2)",
+              "H1": "y[n]=s[n]+w[n], s[n]~CN(0,gamma*sigma_w2), effective SNR=gamma"
+            },
+            "detector_type": "Neyman-Pearson energy detector (radiometer)",
+            "test_statistic": "U=(1/sigma_w2)*sum_{n=1}^{N}|y[n]|^2",
+            "threshold_setting": "eta=0.5*chi2inv(1-P_fa,2N), P_fa=0.01, N=256",
+            "decision_rule": "decide H1 if U>eta else H0",
+            "theoretical_pd_expression": "P_d(gamma)=Q_N(sqrt(2N*gamma),sqrt(2*eta)) (equivalently survival function of noncentral chi-square with dof=2N and noncentrality=2N*gamma)",
+            "snr_sweep_db": [
+              -20,
+              -18,
+              -16,
+              -14,
+              -12,
+              -10,
+              -8,
+              -6,
+              -4,
+              -2,
+              0
+            ],
+            "monte_carlo": {
+              "num_trials_per_snr": 100000,
+              "noise_model": "complex Gaussian",
+              "signal_model_under_H1": "complex Gaussian primary signal with power set by SNR",
+              "estimated_outputs": [
+                "empirical_P_fa",
+                "empirical_P_d",
+                "theoretical_P_d_overlay",
+                "roc_curve",
+                "runtime_ms_per_interval"
+              ],
+              "random_seed": 2026
+            },
+            "roc_configuration": {
+              "fixed_pfa_points": [
+                0.01,
+                0.05,
+                0.1
+              ],
+              "generate_full_roc": true
+            },
+            "robustness_checks": {
+              "enable_noise_uncertainty_test": true,
+              "noise_power_mismatch_db": [
+                -1.0,
+                0.0,
+                1.0
+              ],
+              "note": "Used as secondary analysis to expose ED sensitivity; core objective remains ideal-AWGN NP validation."
+            }
+          },
+          "channel_properties": [
+            "additive_white_gaussian_noise",
+            "frequency_flat",
+            "flat_fading_compensated",
+            "memoryless_within_interval"
+          ]
+        },
+        "performance_targets": {
+          "primary_metric": "P_d_at_P_fa_0.01",
+          "secondary_metrics": [
+            "P_fa_constraint_satisfaction",
+            "theory_simulation_Pd_gap",
+            "ROC_AUC",
+            "complexity_ops_per_interval",
+            "runtime_ms_per_interval"
+          ],
+          "theoretical_bound": "Neyman-Pearson optimality for fixed P_fa when using energy as the chosen test statistic under AWGN with known noise variance.",
+          "baseline_algorithms": [
+            "NP energy detector with analytic threshold (primary baseline)",
+            "Monte Carlo-calibrated CFAR energy threshold (consistency baseline)",
+            "Cyclostationary feature detector (optional robustness/complexity reference only)"
+          ],
+          "target_value": {
+            "P_fa_max": 0.01,
+            "min_snr_db_for_evaluation": -10,
+            "max_abs_theory_empirical_pd_gap": 0.02
+          }
+        },
+        "constraints": {
+          "complexity": "O(N) operations per sensing interval for the primary detector; no matrix inversion; real-time feasible on low-compute nodes.",
+          "data_availability": "no_training_data"
+        },
+        "design_preferences": {
+          "approach": "classical_signal_processing",
+          "interpretability": "high",
+          "online_adaptation": false
+        },
+        "assumptions_made": [
+          "Primary-user waveform structure is not exploited in the main detector; non-coherent energy detection is selected for model-agnostic sensing.",
+          "Noise variance sigma_w2 is known or accurately pre-estimated from calibration/quiet windows for threshold computation.",
+          "Samples are i.i.d. within each sensing interval and free of colored interference unless explicitly stressed in robustness checks.",
+          "Primary detector evaluation is single-interval (fixed-sample) NP testing; sequential quickest detection is out of scope for the core task.",
+          "SNR sweep uses 2 dB spacing from -20 dB to 0 dB to resolve low-SNR behavior while keeping simulation cost practical.",
+          "Monte Carlo trial count of 1e5 per SNR is chosen to stabilize P_fa=0.01 tail estimation and support theory-vs-simulation agreement checks.",
+          "Cyclostationary detection is included only as an optional comparison baseline to contextualize robustness/complexity trade-offs; it is not the primary objective.",
+          "Reliability at -10 dB is treated as a mandatory reporting point, not a guaranteed minimum P_d requirement unless separately specified."
+        ],
+        "task_category": "detection",
+        "task_description": "Implement a fixed-sample Neyman-Pearson energy detector for single-user spectrum sensing with N=256 complex samples per interval under AWGN. Set threshold for P_fa<=0.01, compute closed-form theoretical P_d over SNR in [-20,0] dB, and validate via Monte Carlo with consistent ROC and complexity reporting. Include optional robustness and comparative baselines without changing the main objective.",
+        "exploitable_structure": "Binary hypothesis testing with sufficient statistic U=(1/sigma_w2)sum|y[n]|^2. Under H0, U is central chi-square (2N dof); under H1, U is noncentral chi-square with noncentrality linked to SNR. This supports exact threshold inversion and analytic P_d curves for direct simulation cross-check."
+      }
+    }
+  },
+  {
+    "stage": "S3",
+    "title": "Unified model formalization",
+    "summary_lines": [
+      "Signal type: Single-user SISO complex-baseband binary occupancy sensing with non-coherent energy detection.",
+      "Scenario count: 4",
+      "Problem type: Constrained binary hypothesis test (Neyman-Pearson) with known-noise energy statistic.",
+      "Key formulas: 5",
+      "Algorithm: Closed-Form NP Energy Detector with Vectorized Monte Carlo Validation",
+      "Algorithm steps: 11",
+      "Baselines: 4"
+    ],
+    "payload": {
+      "scenario_spec": {
+        "signal_type": "Single-user SISO complex-baseband binary occupancy sensing with non-coherent energy detection.",
+        "core_parameters": {
+          "num_samples_per_interval_N": 256,
+          "hypotheses": {
+            "H0": "y[n]=w[n],\\;w[n]\\sim\\mathcal{CN}(0,\\sigma_w^2)",
+            "H1": "y[n]=s[n]+w[n],\\;s[n]\\sim\\mathcal{CN}(0,\\gamma\\sigma_w^2),\\;w[n]\\sim\\mathcal{CN}(0,\\sigma_w^2)"
+          },
+          "test_statistic": "U=\\frac{1}{\\sigma_w^2}\\sum_{n=1}^{N}|y[n]|^2",
+          "detector": "Neyman-Pearson energy detector",
+          "false_alarm_constraint": 0.01,
+          "snr_sweep_db": [
+            -20,
+            -18,
+            -16,
+            -14,
+            -12,
+            -10,
+            -8,
+            -6,
+            -4,
+            -2,
+            0
+          ],
+          "num_trials_per_snr": 100000,
+          "random_seed": 2026,
+          "roc_fixed_pfa_points": [
+            0.01,
+            0.05,
+            0.1
+          ],
+          "noise_power_mismatch_db": [
+            -1.0,
+            0.0,
+            1.0
+          ]
+        },
+        "snr_range_db": [
+          -20,
+          0
+        ],
+        "test_scenarios": [
+          {
+            "name": "ideal_awgn_np_validation",
+            "description": "Use known \\(\\sigma_w^2\\) to set analytic NP threshold at \\(P_{fa}=0.01\\) and compare theoretical and empirical \\(P_d\\).",
+            "overrides": {
+              "noise_power_mismatch_db": 0.0,
+              "full_roc": false
+            }
+          },
+          {
+            "name": "fixed_pfa_roc_points",
+            "description": "Evaluate \\(P_d\\) at fixed \\(P_{fa}\\in\\{0.01,0.05,0.1\\}\\) across SNR to verify operating-point consistency.",
+            "overrides": {
+              "pfa_points": [
+                0.01,
+                0.05,
+                0.1
+              ]
+            }
+          },
+          {
+            "name": "full_roc_curve",
+            "description": "Sweep threshold to generate ROC curves and AUC at selected SNR values from the task grid.",
+            "overrides": {
+              "full_roc": true,
+              "pfa_constraint_relaxed_for_curve": true
+            }
+          },
+          {
+            "name": "noise_uncertainty_sensitivity",
+            "description": "Apply threshold computed with assumed noise power while true noise differs by \\(\\pm1\\) dB to expose ED sensitivity.",
+            "overrides": {
+              "noise_power_mismatch_db": [
+                -1.0,
+                1.0
+              ]
+            }
+          }
+        ],
+        "data_contract": {
+          "inputs": [
+            "N",
+            "pfa_target",
+            "snr_db_grid",
+            "num_trials_per_snr",
+            "sigma_w2_assumed",
+            "random_seed",
+            "roc_threshold_grid_or_quantiles",
+            "noise_power_mismatch_db_grid"
+          ],
+          "expected_outputs": [
+            "eta_np_for_each_pfa",
+            "theoretical_pd_vs_snr",
+            "empirical_pfa_vs_snr",
+            "empirical_pd_vs_snr",
+            "abs_theory_empirical_pd_gap_vs_snr",
+            "roc_curves_(pfa,pd,auc)",
+            "runtime_ms_per_interval",
+            "complexity_ops_per_interval",
+            "robustness_results_under_noise_mismatch"
+          ]
+        },
+        "generation_notes": "All Monte Carlo samples are i.i.d. complex Gaussian with vectorized generation and fixed seed for reproducibility."
+      },
+      "system_model_doc": "For each sensing interval, the receiver observes \\(\\mathbf{y}\\in\\mathbb{C}^{N\\times1}\\) with \\(N=256\\) under \\(\\mathcal{H}_0:\\mathbf{y}=\\mathbf{w}\\) and \\(\\mathcal{H}_1:\\mathbf{y}=\\mathbf{s}+\\mathbf{w}\\), where \\(\\mathbf{w}\\sim\\mathcal{CN}(\\mathbf{0},\\sigma_w^2\\mathbf{I}_N)\\) and \\(\\mathbf{s}\\sim\\mathcal{CN}(\\mathbf{0},\\gamma\\sigma_w^2\\mathbf{I}_N)\\); the sufficient statistic is normalized energy \\(U=\\sigma_w^{-2}\\sum_{n=1}^{N}|y[n]|^2\\), with NP rule \\(U\\gtrless_{\\mathcal{H}_0}^{\\mathcal{H}_1}\\eta\\) where \\(\\eta=\\tfrac12F^{-1}_{\\chi^2_{2N}}(1-P_{fa})\\), and theoretical detection is \\(P_d(\\gamma)=Q_N(\\sqrt{2N\\gamma},\\sqrt{2\\eta})=\\Pr\\{\\chi'^2_{2N}(2N\\gamma)>2\\eta\\}\\).",
+      "math_formulation": {
+        "problem_type": "Constrained binary hypothesis test (Neyman-Pearson) with known-noise energy statistic.",
+        "objective": {
+          "type": "maximize",
+          "description": "Maximize detection probability subject to a false-alarm upper bound using a scalar threshold on the sufficient statistic.",
+          "formula_latex": "\\max_{\\eta}\\;P_d(\\eta,\\gamma)\\quad\\text{s.t.}\\quad P_{fa}(\\eta)\\le \\alpha,\\;\\alpha=0.01"
+        },
+        "variables": [
+          {
+            "symbol": "y[n]",
+            "name": "received sample",
+            "domain": "\\mathbb{C}",
+            "description": "Observed complex baseband sample at index \\(n\\in\\{1,\\dots,N\\}\\)."
+          },
+          {
+            "symbol": "U",
+            "name": "normalized energy statistic",
+            "domain": "\\mathbb{R}_{\\ge 0}",
+            "description": "Sufficient statistic for NP testing under i.i.d. circular Gaussian noise."
+          },
+          {
+            "symbol": "\\eta",
+            "name": "decision threshold",
+            "domain": "\\mathbb{R}_{\\ge 0}",
+            "description": "Scalar threshold set by the \\(P_{fa}\\) constraint."
+          },
+          {
+            "symbol": "\\gamma",
+            "name": "SNR",
+            "domain": "\\mathbb{R}_{\\ge 0}",
+            "description": "Linear SNR under \\(\\mathcal{H}_1\\), related to dB by \\(\\gamma=10^{\\mathrm{SNR}_{dB}/10}\\)."
+          },
+          {
+            "symbol": "\\sigma_w^2",
+            "name": "noise variance",
+            "domain": "\\mathbb{R}_{>0}",
+            "description": "Known or calibrated AWGN variance used for normalization and thresholding."
+          },
+          {
+            "symbol": "N",
+            "name": "samples per interval",
+            "domain": "\\mathbb{N}",
+            "description": "Fixed sensing-window length with task value \\(N=256\\)."
+          }
+        ],
+        "constraints": [
+          {
+            "formula_latex": "P_{fa}(\\eta)=\\Pr(U>\\eta\\mid\\mathcal{H}_0)\\le 0.01",
+            "description": "False-alarm probability must satisfy the NP design constraint.",
+            "type": "inequality"
+          },
+          {
+            "formula_latex": "U=\\frac{1}{\\sigma_w^2}\\sum_{n=1}^{N}|y[n]|^2",
+            "description": "Detector must use the specified energy statistic.",
+            "type": "structural"
+          },
+          {
+            "formula_latex": "d(\\mathbf{y})=\\mathbb{1}\\{U>\\eta\\}",
+            "description": "Binary decision rule maps statistic to occupancy decision.",
+            "type": "equality"
+          }
+        ],
+        "key_formulas": [
+          {
+            "name": "H0_statistic_distribution",
+            "formula_latex": "U\\mid\\mathcal{H}_0\\sim \\Gamma(k=N,\\theta=1)\\iff 2U\\sim\\chi^2_{2N}",
+            "description": "Central distribution used for threshold inversion."
+          },
+          {
+            "name": "H1_statistic_distribution",
+            "formula_latex": "\\frac{2}{1+\\gamma}U\\mid\\mathcal{H}_1\\sim\\chi^2_{2N}\\;\\;\\text{(equiv. }2U\\sim(1+\\gamma)\\chi^2_{2N}\\text{)}",
+            "description": "Distribution under random Gaussian signal model for analytic \\(P_d\\)."
+          },
+          {
+            "name": "np_threshold",
+            "formula_latex": "\\eta_{\\alpha}=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha),\\;\\alpha\\in\\{0.01,0.05,0.1\\}",
+            "description": "Closed-form NP threshold from central chi-square quantile."
+          },
+          {
+            "name": "theoretical_detection_probability",
+            "formula_latex": "P_d(\\gamma)=\\Pr\\!\\left(U>\\eta\\mid\\mathcal{H}_1\\right)=1-F_{\\chi^2_{2N}}\\!\\left(\\frac{2\\eta}{1+\\gamma}\\right)=Q_N\\!\\left(\\sqrt{2N\\gamma},\\sqrt{2\\eta}\\right)",
+            "description": "Equivalent chi-square CDF and Marcum-Q forms for \\(P_d\\)."
+          },
+          {
+            "name": "empirical_estimators",
+            "formula_latex": "\\widehat{P}_{fa}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(0)}>\\eta\\},\\quad \\widehat{P}_{d}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(1)}>\\eta\\}",
+            "description": "Monte Carlo estimates with \\(T=10^5\\) trials per SNR."
+          }
+        ],
+        "assumptions": [
+          "Samples are i.i.d. within each sensing interval and the channel is AWGN, frequency-flat, and memoryless.",
+          "Noise variance is known for the main NP design and only perturbed in robustness checks.",
+          "Primary signal is modeled as circular complex Gaussian with power \\(\\gamma\\sigma_w^2\\) under \\(\\mathcal{H}_1\\).",
+          "Single-interval fixed-sample detection is the core scope, not sequential quickest detection."
+        ],
+        "model_properties": {
+          "convexity": "Monotone one-dimensional threshold design with exact quantile inversion rather than a nonconvex search.",
+          "closed_form": true,
+          "iterative_required": false,
+          "special_structure": "Sufficient-statistic reduction to scalar energy with chi-square/gamma distributional structure under both hypotheses."
+        },
+        "formulation_markdown": "The NP detector reduces the \\(N\\)-sample complex observation to scalar energy \\(U\\), so design is a one-parameter test where \\(\\eta\\) is chosen by exact inversion of the \\(\\mathcal{H}_0\\) chi-square CDF to enforce \\(P_{fa}\\le0.01\\), and performance prediction uses the closed-form \\(\\mathcal{H}_1\\) survival function (equivalently Marcum-\\(Q\\)) across the prescribed SNR grid for direct Monte Carlo cross-validation."
+      },
+      "formalization_summary": {
+        "design_implications": [
+          "Exploit sufficient-statistic structure by reducing each interval to scalar energy, enabling exact NP thresholding without iterative optimization.",
+          "Use chi-square/gamma closed forms to generate theoretical curves before simulation, then treat Monte Carlo as validation rather than parameter fitting.",
+          "Maintain O(N) per-interval implementation to satisfy low-compute real-time constraints."
+        ],
+        "evaluation_focus": [
+          "Verify \\(P_{fa}\\le 0.01\\) and report \\(P_d\\) versus SNR from -20 dB to 0 dB with mandatory emphasis at -10 dB.",
+          "Track absolute theory-simulation \\(P_d\\) gap against target \\(\\le 0.02\\) where specified.",
+          "Overlay the Neyman-Pearson optimality benchmark as a reference bound in performance plots.",
+          "Report ROC/AUC and runtime per interval, plus secondary noise-uncertainty sensitivity."
+        ],
+        "implementation_risks": [
+          "Finite-trial tail estimation may bias \\(\\widehat{P}_{fa}\\) near 0.01 if vectorization or RNG handling is incorrect.",
+          "Noise-variance mismatch directly shifts effective threshold and can significantly degrade ED detection at low SNR.",
+          "Inconsistent normalization between theory and simulation (factor-of-2 chi-square scaling) can create false discrepancy."
+        ]
+      },
+      "algorithm_design": {
+        "proposed_algorithm": {
+          "name": "Closed-Form NP Energy Detector with Vectorized Monte Carlo Validation",
+          "type": "closed_form",
+          "summary": "Compute analytic NP thresholds and theoretical \\(P_d\\), then validate with vectorized Monte Carlo and ROC generation under ideal and noise-mismatch settings."
+        },
+        "algorithm_steps": [
+          {
+            "step": 1,
+            "name": "Initialize constants and grids",
+            "description": "Set fixed task parameters and convert SNR dB grid to linear values for all subsequent computations.",
+            "formula_latex": "N=256,\\;\\alpha=0.01,\\;\\mathcal{G}_{\\mathrm{dB}}=\\{-20,-18,\\dots,0\\},\\;\\gamma_i=10^{\\mathcal{G}_{\\mathrm{dB}}[i]/10},\\;i=1,\\dots,11,\\;T=100000",
+            "inputs": [
+              "task configuration"
+            ],
+            "outputs": [
+              "N",
+              "alpha",
+              "gamma_grid",
+              "T"
+            ],
+            "numpy_hint": "Use np.array for dB grid and gamma_grid = 10**(snr_db/10)."
+          },
+          {
+            "step": 2,
+            "name": "Set random seed and noise variance reference",
+            "description": "Fix reproducibility and define assumed noise variance used in normalization and thresholding.",
+            "formula_latex": "\\text{seed}=2026,\\;\\sigma_{w,\\mathrm{assumed}}^2>0\\;\\text{(fixed reference)},\\;\\Delta_{\\nu}\\in\\{-1,0,1\\}\\;\\text{dB}",
+            "inputs": [
+              "random_seed",
+              "sigma_w2_assumed",
+              "noise_power_mismatch_db"
+            ],
+            "outputs": [
+              "rng_state",
+              "sigma_w2_assumed",
+              "mismatch_grid"
+            ],
+            "numpy_hint": "Use np.random.default_rng(seed)."
+          },
+          {
+            "step": 3,
+            "name": "Compute NP thresholds for required Pfa points",
+            "description": "Obtain analytic thresholds from central chi-square quantiles for the fixed and ROC operating points.",
+            "formula_latex": "\\eta(\\alpha_m)=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha_m),\\;\\alpha_m\\in\\{0.01,0.05,0.1\\}",
+            "inputs": [
+              "N",
+              "pfa_points"
+            ],
+            "outputs": [
+              "eta_map"
+            ],
+            "numpy_hint": "Use scipy.stats.chi2.ppf(1-alpha_m, df=2*N)/2."
+          },
+          {
+            "step": 4,
+            "name": "Compute theoretical Pd curves",
+            "description": "Evaluate closed-form \\(P_d\\) over SNR for each fixed \\(P_{fa}\\) threshold.",
+            "formula_latex": "P_d^{\\mathrm{th}}(\\gamma_i;\\alpha_m)=1-F_{\\chi^2_{2N}}\\!\\left(\\frac{2\\eta(\\alpha_m)}{1+\\gamma_i}\\right),\\;i=1,\\dots,11",
+            "inputs": [
+              "gamma_grid",
+              "eta_map",
+              "N"
+            ],
+            "outputs": [
+              "pd_theory"
+            ],
+            "numpy_hint": "Use scipy.stats.chi2.cdf with vectorized broadcasting."
+          },
+          {
+            "step": 5,
+            "name": "Generate H0 Monte Carlo samples",
+            "description": "Create \\(T\\times N\\) i.i.d. complex Gaussian noise matrices for each mismatch scenario.",
+            "formula_latex": "w_{t,n}^{(\\delta)}=\\sqrt{\\frac{\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(a_{t,n}+j b_{t,n}\\right),\\;a_{t,n},b_{t,n}\\overset{i.i.d.}{\\sim}\\mathcal{N}(0,1),\\;\\sigma_{w,\\mathrm{true}}^2(\\delta)=\\sigma_{w,\\mathrm{assumed}}^2\\cdot10^{\\delta/10}",
+            "inputs": [
+              "T",
+              "N",
+              "sigma_w2_assumed",
+              "mismatch_grid",
+              "rng_state"
+            ],
+            "outputs": [
+              "W_delta"
+            ],
+            "numpy_hint": "Use rng.standard_normal((T,N)) for real and imag parts, then combine."
+          },
+          {
+            "step": 6,
+            "name": "Generate H1 Monte Carlo samples per SNR",
+            "description": "For each SNR and mismatch case, generate Gaussian signal plus noise observations.",
+            "formula_latex": "s_{t,n}^{(i,\\delta)}=\\sqrt{\\frac{\\gamma_i\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(c_{t,n}+j d_{t,n}\\right),\\;y_{t,n}^{(1,i,\\delta)}=s_{t,n}^{(i,\\delta)}+w_{t,n}^{(\\delta)}",
+            "inputs": [
+              "gamma_grid",
+              "W_delta",
+              "sigma_w2_assumed",
+              "mismatch_grid",
+              "rng_state"
+            ],
+            "outputs": [
+              "Y1_i_delta"
+            ],
+            "numpy_hint": "Vectorize over trials and samples; loop only over SNR points."
+          },
+          {
+            "step": 7,
+            "name": "Compute normalized energy statistics",
+            "description": "Reduce raw complex samples to scalar sufficient statistics for H0 and H1.",
+            "formula_latex": "U_t^{(0,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|w_{t,n}^{(\\delta)}\\right|^2,\\quad U_t^{(1,i,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|y_{t,n}^{(1,i,\\delta)}\\right|^2",
+            "inputs": [
+              "W_delta",
+              "Y1_i_delta",
+              "sigma_w2_assumed"
+            ],
+            "outputs": [
+              "U0_delta",
+              "U1_i_delta"
+            ],
+            "numpy_hint": "Use np.abs(X)**2 then np.sum(axis=1)."
+          },
+          {
+            "step": 8,
+            "name": "Apply NP decision rule",
+            "description": "Threshold statistics to produce binary decisions under each hypothesis.",
+            "formula_latex": "d_t^{(0,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(0,\\delta)}>\\eta(\\alpha_m)\\},\\quad d_t^{(1,i,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(1,i,\\delta)}>\\eta(\\alpha_m)\\}",
+            "inputs": [
+              "U0_delta",
+              "U1_i_delta",
+              "eta_map"
+            ],
+            "outputs": [
+              "D0",
+              "D1"
+            ],
+            "numpy_hint": "Use boolean comparisons and astype(np.float64) for averaging."
+          },
+          {
+            "step": 9,
+            "name": "Estimate empirical Pfa and Pd",
+            "description": "Compute Monte Carlo probabilities and theory-simulation gaps for reporting targets.",
+            "formula_latex": "\\widehat{P}_{fa}(\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(0,\\delta,\\alpha_m)},\\quad \\widehat{P}_{d}(i,\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(1,i,\\delta,\\alpha_m)},\\quad \\Delta_{pd}(i)=\\left|\\widehat{P}_{d}(i,0,0.01)-P_d^{\\mathrm{th}}(\\gamma_i;0.01)\\right|",
+            "inputs": [
+              "D0",
+              "D1",
+              "pd_theory"
+            ],
+            "outputs": [
+              "pfa_emp",
+              "pd_emp",
+              "pd_gap"
+            ],
+            "numpy_hint": "Use np.mean over trial axis and np.abs difference."
+          },
+          {
+            "step": 10,
+            "name": "Generate full ROC and AUC",
+            "description": "Sweep threshold grid to compute ROC points and numerical AUC at selected SNR values.",
+            "formula_latex": "\\eta_r\\in\\mathcal{E},\\;P_{fa,r}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(0,0)}>\\eta_r\\},\\;P_{d,r}(i)=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(1,i,0)}>\\eta_r\\},\\;\\mathrm{AUC}(i)=\\int_{0}^{1}P_d(P_{fa};i)\\,dP_{fa}",
+            "inputs": [
+              "U0_delta",
+              "U1_i_delta",
+              "roc_threshold_grid"
+            ],
+            "outputs": [
+              "roc_curves",
+              "auc_values"
+            ],
+            "numpy_hint": "Use np.quantile for threshold grid, vectorized comparisons, and np.trapz for AUC."
+          },
+          {
+            "step": 11,
+            "name": "Measure runtime and operation count",
+            "description": "Compute per-interval runtime and analytical operation complexity for the primary detector.",
+            "formula_latex": "\\text{runtime\\_ms\\_per\\_interval}=1000\\cdot\\frac{t_{\\mathrm{end}}-t_{\\mathrm{start}}}{N_{\\mathrm{intervals}}},\\quad \\mathrm{ops}_{\\mathrm{ED}}\\approx c\\,N\\;\\Rightarrow\\;\\mathcal{O}(N)",
+            "inputs": [
+              "timing_marks",
+              "N",
+              "num_intervals_processed"
+            ],
+            "outputs": [
+              "runtime_ms_per_interval",
+              "complexity_ops_per_interval"
+            ],
+            "numpy_hint": "Use time.perf_counter and simple scalar arithmetic."
+          }
+        ],
+        "baseline_algorithms": [
+          {
+            "name": "NP energy detector with analytic threshold",
+            "summary": "Classical reference detector using exact chi-square threshold inversion at target \\(P_{fa}\\).",
+            "key_formula_latex": "\\eta_{\\alpha}=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha),\\quad d=\\mathbb{1}\\{U>\\eta_{\\alpha}\\}",
+            "numpy_hint": "Use scipy.stats.chi2.ppf and vectorized thresholding."
+          },
+          {
+            "name": "Monte Carlo-calibrated CFAR energy threshold",
+            "summary": "Empirical threshold baseline that estimates \\(\\eta\\) from noise-only samples at desired \\(P_{fa}\\).",
+            "key_formula_latex": "\\eta_{\\mathrm{CFAR}}=\\mathrm{Quantile}_{1-\\alpha}\\left(\\{U_t^{(0)}\\}_{t=1}^{T_{\\mathrm{cal}}}\\right)",
+            "numpy_hint": "Use np.quantile(U0_cal, 1-alpha)."
+          },
+          {
+            "name": "Neyman-Pearson optimality for fixed P_fa when using energy as the chosen test statistic under AWGN with known noise variance.",
+            "summary": "Use NP lemma result as analytical benchmark curve and interpret any implementable detector against this optimum within the chosen statistic family.",
+            "key_formula_latex": "\\delta^*(\\mathbf{y})=\\mathbb{1}\\{\\Lambda(\\mathbf{y})>\\tau\\},\\;\\Lambda(\\mathbf{y})=\\frac{f_{\\mathbf{Y}|\\mathcal{H}_1}(\\mathbf{y})}{f_{\\mathbf{Y}|\\mathcal{H}_0}(\\mathbf{y})},\\;P_d\\;\\text{maximized for fixed}\\;P_{fa}",
+            "numpy_hint": "analytical formula — compute and plot as reference"
+          },
+          {
+            "name": "Cyclostationary feature detector (optional reference)",
+            "summary": "Complexity-robustness comparison baseline using cyclic autocorrelation magnitude.",
+            "key_formula_latex": "T_{\\mathrm{CFD}}=\\max_{\\alpha\\in\\mathcal{A},\\tau\\in\\mathcal{T}}\\left|\\hat{R}_y^{\\alpha}(\\tau)\\right|,\\;\\hat{R}_y^{\\alpha}(\\tau)=\\frac{1}{N-\\tau}\\sum_{n=1}^{N-\\tau}y[n+\\tau]y^*[n]e^{-j2\\pi\\alpha n}",
+            "numpy_hint": "Use np.exp, np.conj, and optionally np.fft.fft for acceleration."
+          }
+        ],
+        "convergence": {
+          "criterion": "",
+          "typical_iterations": null,
+          "formula_latex": ""
+        },
+        "complexity": {
+          "per_iteration": "Primary detector evaluation is O(N) per interval; full study cost is O(|SNR|·T·N) for Monte Carlo sweeps.",
+          "dominant_operation": "Accumulation of squared magnitudes for energy statistics over T×N samples (and threshold sweeps for ROC)."
+        }
+      }
+    }
+  },
+  {
+    "stage": "S4",
+    "title": "Solution planning",
+    "summary_lines": [
+      "Architecture: Notebook Solution",
+      "Strategy: Notebook Solution",
+      "Notebook cells planned: 10",
+      "Primary metrics: P_d_at_P_fa_0.01"
+    ],
+    "payload": {
+      "objective": "Maximize detection probability under false-alarm constraint using NP energy detection: \\(\\max_{\\eta} P_d(\\eta,\\gamma)\\;\\text{s.t.}\\;P_{fa}(\\eta)\\le\\alpha,\\alpha=0.01\\).",
+      "inputs": [
+        {
+          "name": "N",
+          "shape": "scalar",
+          "dtype": "int",
+          "description": "Samples per sensing interval, fixed at 256."
+        },
+        {
+          "name": "pfa_points",
+          "shape": "(3,)",
+          "dtype": "float",
+          "description": "False alarm targets [0.01, 0.05, 0.1]."
+        },
+        {
+          "name": "snr_db_grid",
+          "shape": "(11,)",
+          "dtype": "float",
+          "description": "SNR sweep in dB from -20 to 0 with 2 dB spacing."
+        },
+        {
+          "name": "num_trials_per_snr",
+          "shape": "scalar",
+          "dtype": "int",
+          "description": "Monte Carlo trials per SNR, default 100000."
+        },
+        {
+          "name": "sigma_w2_assumed",
+          "shape": "scalar",
+          "dtype": "float",
+          "description": "Assumed noise variance for normalization and thresholding."
+        },
+        {
+          "name": "noise_power_mismatch_db_grid",
+          "shape": "(3,)",
+          "dtype": "float",
+          "description": "Mismatch test grid [-1, 0, +1] dB."
+        },
+        {
+          "name": "random_seed",
+          "shape": "scalar",
+          "dtype": "int",
+          "description": "Reproducible RNG seed (2026)."
+        }
+      ],
+      "outputs": [
+        {
+          "name": "eta_map",
+          "shape": "(num_pfa_points,)",
+          "dtype": "float",
+          "description": "NP thresholds for each Pfa target."
+        },
+        {
+          "name": "pd_theory",
+          "shape": "(num_snr, num_pfa_points)",
+          "dtype": "float",
+          "description": "Theoretical Pd curves from chi-square survival function."
+        },
+        {
+          "name": "pfa_emp",
+          "shape": "(num_mismatch, num_pfa_points)",
+          "dtype": "float",
+          "description": "Empirical false-alarm probabilities."
+        },
+        {
+          "name": "pd_emp",
+          "shape": "(num_snr, num_mismatch, num_pfa_points)",
+          "dtype": "float",
+          "description": "Empirical detection probabilities."
+        },
+        {
+          "name": "pd_gap",
+          "shape": "(num_snr,)",
+          "dtype": "float",
+          "description": "Absolute theory-simulation gap at mismatch 0 dB and Pfa=0.01."
+        },
+        {
+          "name": "roc_curves",
+          "shape": "dict",
+          "dtype": "object",
+          "description": "ROC arrays (pfa,pd) and AUC for selected SNR points."
+        },
+        {
+          "name": "runtime_ms_per_interval",
+          "shape": "scalar",
+          "dtype": "float",
+          "description": "Measured execution time normalized per interval."
+        },
+        {
+          "name": "complexity_ops_per_interval",
+          "shape": "scalar",
+          "dtype": "float",
+          "description": "Operation-count proxy c*N for ED."
+        }
+      ],
+      "pipeline": [
+        {
+          "step": 1,
+          "name": "Initialize constants and grids",
+          "purpose": "Prepare fixed experiment dimensions and SNR linear grid.",
+          "formula_latex": "N=256,\\;\\alpha=0.01,\\;\\mathcal{G}_{\\mathrm{dB}}=\\{-20,-18,\\dots,0\\},\\;\\gamma_i=10^{\\mathcal{G}_{\\mathrm{dB}}[i]/10},\\;i=1,\\dots,11,\\;T=100000",
+          "implementation_hint": "Use np.array for dB grid and gamma_grid = 10**(snr_db/10)."
+        },
+        {
+          "step": 2,
+          "name": "Set RNG and noise reference",
+          "purpose": "Fix reproducibility and define assumed/true-noise mismatch scenarios.",
+          "formula_latex": "\\text{seed}=2026,\\;\\sigma_{w,\\mathrm{assumed}}^2>0\\;\\text{(fixed reference)},\\;\\Delta_{\\nu}\\in\\{-1,0,1\\}\\;\\text{dB}",
+          "implementation_hint": "Use np.random.default_rng(seed)."
+        },
+        {
+          "step": 3,
+          "name": "Compute NP thresholds",
+          "purpose": "Obtain analytic thresholds satisfying each Pfa target.",
+          "formula_latex": "\\eta(\\alpha_m)=\\frac{1}{2}F^{-1}_{\\chi^2_{2N}}(1-\\alpha_m),\\;\\alpha_m\\in\\{0.01,0.05,0.1\\}",
+          "implementation_hint": "Use scipy.stats.chi2.ppf(1-alpha_m, df=2*N)/2."
+        },
+        {
+          "step": 4,
+          "name": "Compute theoretical Pd",
+          "purpose": "Generate closed-form reference curves over SNR and Pfa points.",
+          "formula_latex": "P_d^{\\mathrm{th}}(\\gamma_i;\\alpha_m)=1-F_{\\chi^2_{2N}}\\!\\left(\\frac{2\\eta(\\alpha_m)}{1+\\gamma_i}\\right),\\;i=1,\\dots,11",
+          "implementation_hint": "Use scipy.stats.chi2.cdf with vectorized broadcasting."
+        },
+        {
+          "step": 5,
+          "name": "Generate H0 Monte Carlo samples",
+          "purpose": "Create noise-only intervals under each mismatch case.",
+          "formula_latex": "w_{t,n}^{(\\delta)}=\\sqrt{\\frac{\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(a_{t,n}+j b_{t,n}\\right),\\;a_{t,n},b_{t,n}\\overset{i.i.d.}{\\sim}\\mathcal{N}(0,1),\\;\\sigma_{w,\\mathrm{true}}^2(\\delta)=\\sigma_{w,\\mathrm{assumed}}^2\\cdot10^{\\delta/10}",
+          "implementation_hint": "Use rng.standard_normal((T,N)) for real and imag parts, then combine."
+        },
+        {
+          "step": 6,
+          "name": "Generate H1 Monte Carlo samples per SNR",
+          "purpose": "Create occupied-band intervals with Gaussian signal plus noise.",
+          "formula_latex": "s_{t,n}^{(i,\\delta)}=\\sqrt{\\frac{\\gamma_i\\sigma_{w,\\mathrm{true}}^2(\\delta)}{2}}\\left(c_{t,n}+j d_{t,n}\\right),\\;y_{t,n}^{(1,i,\\delta)}=s_{t,n}^{(i,\\delta)}+w_{t,n}^{(\\delta)}",
+          "implementation_hint": "Vectorize over trials and samples; loop only over SNR points."
+        },
+        {
+          "step": 7,
+          "name": "Compute normalized energy statistics",
+          "purpose": "Reduce each interval to the sufficient scalar statistic.",
+          "formula_latex": "U_t^{(0,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|w_{t,n}^{(\\delta)}\\right|^2,\\quad U_t^{(1,i,\\delta)}=\\frac{1}{\\sigma_{w,\\mathrm{assumed}}^2}\\sum_{n=1}^{N}\\left|y_{t,n}^{(1,i,\\delta)}\\right|^2",
+          "implementation_hint": "Use np.abs(X)**2 then np.sum(axis=1)."
+        },
+        {
+          "step": 8,
+          "name": "Apply NP decision rule",
+          "purpose": "Convert statistics to binary occupancy decisions for each threshold.",
+          "formula_latex": "d_t^{(0,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(0,\\delta)}>\\eta(\\alpha_m)\\},\\quad d_t^{(1,i,\\delta,\\alpha_m)}=\\mathbb{1}\\{U_t^{(1,i,\\delta)}>\\eta(\\alpha_m)\\}",
+          "implementation_hint": "Use boolean comparisons and astype(np.float64) for averaging."
+        },
+        {
+          "step": 9,
+          "name": "Estimate empirical Pfa/Pd and theory gap",
+          "purpose": "Compute Monte Carlo performance and check agreement with theory.",
+          "formula_latex": "\\widehat{P}_{fa}(\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(0,\\delta,\\alpha_m)},\\quad \\widehat{P}_{d}(i,\\delta,\\alpha_m)=\\frac{1}{T}\\sum_{t=1}^{T}d_t^{(1,i,\\delta,\\alpha_m)},\\quad \\Delta_{pd}(i)=\\left|\\widehat{P}_{d}(i,0,0.01)-P_d^{\\mathrm{th}}(\\gamma_i;0.01)\\right|",
+          "implementation_hint": "Use np.mean over trial axis and np.abs difference."
+        },
+        {
+          "step": 10,
+          "name": "Generate full ROC and AUC",
+          "purpose": "Produce threshold-swept operating curves and scalar AUC summaries.",
+          "formula_latex": "\\eta_r\\in\\mathcal{E},\\;P_{fa,r}=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(0,0)}>\\eta_r\\},\\;P_{d,r}(i)=\\frac{1}{T}\\sum_{t=1}^{T}\\mathbb{1}\\{U_t^{(1,i,0)}>\\eta_r\\},\\;\\mathrm{AUC}(i)=\\int_{0}^{1}P_d(P_{fa};i)\\,dP_{fa}",
+          "implementation_hint": "Use np.quantile for threshold grid, vectorized comparisons, and np.trapz for AUC."
+        },
+        {
+          "step": 11,
+          "name": "Measure runtime and operation count",
+          "purpose": "Report practical efficiency and complexity compliance.",
+          "formula_latex": "\\text{runtime\\_ms\\_per\\_interval}=1000\\cdot\\frac{t_{\\mathrm{end}}-t_{\\mathrm{start}}}{N_{\\mathrm{intervals}}},\\quad \\mathrm{ops}_{\\mathrm{ED}}\\approx c\\,N\\;\\Rightarrow\\;\\mathcal{O}(N)",
+          "implementation_hint": "Use time.perf_counter and simple scalar arithmetic."
+        }
+      ],
+      "core_assumptions": [
+        "i.i.d. circular-complex Gaussian noise and Gaussian primary signal model within each interval.",
+        "Known sigma_w2 for main NP threshold design.",
+        "Single-interval fixed-sample detection scope (not sequential quickest detection)."
+      ],
+      "implementation_constraints": [
+        "Primary detector per-interval complexity must remain O(N).",
+        "No external module files; all code in notebook cells.",
+        "Vectorized Monte Carlo generation to keep 1e5-trial sweeps practical."
+      ],
+      "failure_modes": [
+        "Normalization mismatch (factor-2 chi-square scaling) causing false theory/simulation discrepancy.",
+        "Insufficient trials or poor RNG handling biasing tail Pfa estimates near 0.01.",
+        "Noise uncertainty causing Pfa inflation/deflation relative to target."
+      ],
+      "evaluation_contract": {
+        "primary_metrics": [
+          "P_d_at_P_fa_0.01",
+          "theory_simulation_Pd_gap",
+          "P_fa_constraint_satisfaction"
+        ],
+        "baseline_methods": [
+          "NP energy detector with analytic threshold",
+          "Monte Carlo-calibrated CFAR energy threshold",
+          "Neyman-Pearson optimality benchmark",
+          "Cyclostationary feature detector (optional reference)"
+        ],
+        "required_result_keys": [
+          "algorithm",
+          "elapsed_sec",
+          "performance_data"
+        ]
+      },
+      "architecture": {
+        "name": "Notebook Solution",
+        "strategy_label": "Notebook Solution",
+        "summary": "Single-path notebook execution plan"
+      },
+      "algorithm_spec": {
+        "objective": "Implement a fixed-sample Neyman-Pearson energy detector for single-user spectrum sensing with N=256 complex samples per interval under AWGN. Set threshold for P_fa<=0.01, compute closed-form theoretical P_d over SNR in [-20,0] dB, and validate via Monte Carlo with consistent ROC and complexity reporting. Include optional robustness and comparative baselines without changing the main objective.",
+        "inputs": [],
+        "outputs": [],
+        "pipeline": [],
+        "core_assumptions": [],
+        "implementation_constraints": [],
+        "failure_modes": [],
+        "evaluation_contract": {
+          "required_result_keys": [
+            "algorithm",
+            "elapsed_sec",
+            "performance_data",
+            "report_assets"
+          ],
+          "baseline_methods": []
+        }
+      },
+      "evaluation_plan": {
+        "independent_variable": "Operating Point",
+        "variable_points": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "num_monte_carlo": 20,
+        "primary_metrics": [
+          {
+            "name": "P_d_at_P_fa_0.01",
+            "description": "Primary task metric P_d_at_P_fa_0.01"
+          }
+        ],
+        "secondary_metrics": [],
+        "baseline_methods": [],
+        "plots": [],
+        "sensitivity_factors": [],
+        "boundary_conditions": []
+      },
+      "notebook_plan": [
+        {
+          "role": "title",
+          "cell_type": "markdown",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "problem_setup",
+          "cell_type": "markdown",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "modeling_summary",
+          "cell_type": "markdown",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "imports_setup",
+          "cell_type": "code",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "data_generation",
+          "cell_type": "code",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "algorithm_core",
+          "cell_type": "code",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "evaluation_logic",
+          "cell_type": "code",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "execution",
+          "cell_type": "code",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "plotting",
+          "cell_type": "code",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        },
+        {
+          "role": "result_notes",
+          "cell_type": "markdown",
+          "purpose": "Auto-filled notebook contract requirement",
+          "must_include": []
+        }
+      ],
+      "execution_contract": {
+        "primary_metric": "P_d_at_P_fa_0.01",
+        "baseline_methods": [],
+        "independent_variable": "Operating Point",
+        "variable_points": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "num_monte_carlo": 20,
+        "required_roles": [
+          "title",
+          "problem_setup",
+          "modeling_summary",
+          "imports_setup",
+          "data_generation",
+          "algorithm_core",
+          "evaluation_logic",
+          "execution",
+          "plotting",
+          "result_notes"
+        ],
+        "required_result_keys": [
+          "algorithm",
+          "elapsed_sec",
+          "performance_data",
+          "report_assets"
+        ],
+        "comparison_required": false,
+        "algorithm_steps": [],
+        "implementation_constraints": []
+      }
+    }
+  },
+  {
+    "stage": "S5",
+    "title": "Notebook generation",
+    "summary_lines": [
+      "Generation mode: fresh",
+      "Notebook cells: 15",
+      "Code cells: 6",
+      "Markdown cells: 9"
+    ],
+    "payload": {
+      "cells": 15,
+      "code_cells": 6,
+      "markdown_cells": 9,
+      "roles": [
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup",
+        "imports_setup_narrative",
+        "data_generation",
+        "data_generation_narrative",
+        "algorithm_core",
+        "algorithm_core_narrative",
+        "evaluation_logic",
+        "evaluation_logic_narrative",
+        "execution",
+        "execution_narrative",
+        "plotting",
+        "result_notes",
+        "title"
+      ],
+      "code_roles": [
+        "imports_setup",
+        "data_generation",
+        "algorithm_core",
+        "evaluation_logic",
+        "execution",
+        "plotting"
+      ],
+      "markdown_roles": [
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup_narrative",
+        "data_generation_narrative",
+        "algorithm_core_narrative",
+        "evaluation_logic_narrative",
+        "execution_narrative",
+        "result_notes",
+        "title"
+      ]
+    }
+  },
+  {
+    "stage": "S6",
+    "title": "Notebook verification",
+    "summary_lines": [
+      "Status: error",
+      "Errors: 1",
+      "Warnings: 0",
+      "First error: Notebook does not reference the planned primary metric 'P_d_at_P_fa_0.01'"
+    ],
+    "payload": {
+      "status": "error",
+      "errors": [
+        "Notebook does not reference the planned primary metric 'P_d_at_P_fa_0.01'"
+      ],
+      "warnings": [],
+      "repair_guidance": [
+        "Notebook verification passed"
+      ],
+      "required_roles": [
+        "title",
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup",
+        "data_generation",
+        "algorithm_core",
+        "evaluation_logic",
+        "execution",
+        "plotting",
+        "result_notes"
+      ],
+      "notebook_summary": {
+        "cells": 15,
+        "code_cells": 6,
+        "markdown_cells": 9,
+        "roles": [
+          "problem_setup",
+          "modeling_summary",
+          "imports_setup",
+          "imports_setup_narrative",
+          "data_generation",
+          "data_generation_narrative",
+          "algorithm_core",
+          "algorithm_core_narrative",
+          "evaluation_logic",
+          "evaluation_logic_narrative",
+          "execution",
+          "execution_narrative",
+          "plotting",
+          "result_notes",
+          "title"
+        ]
+      }
+    }
+  },
+  {
+    "stage": "S5",
+    "title": "Notebook generation",
+    "summary_lines": [
+      "Generation mode: repair:verification",
+      "Notebook cells: 15",
+      "Code cells: 6",
+      "Markdown cells: 9"
+    ],
+    "payload": {
+      "cells": 15,
+      "code_cells": 6,
+      "markdown_cells": 9,
+      "roles": [
+        "modeling_summary",
+        "imports_setup",
+        "imports_setup_narrative",
+        "data_generation",
+        "data_generation_narrative",
+        "algorithm_core",
+        "algorithm_core_narrative",
+        "evaluation_logic",
+        "evaluation_logic_narrative",
+        "execution",
+        "execution_narrative",
+        "plotting",
+        "result_notes",
+        "title",
+        "problem_setup"
+      ],
+      "code_roles": [
+        "imports_setup",
+        "data_generation",
+        "algorithm_core",
+        "evaluation_logic",
+        "execution",
+        "plotting"
+      ],
+      "markdown_roles": [
+        "modeling_summary",
+        "imports_setup_narrative",
+        "data_generation_narrative",
+        "algorithm_core_narrative",
+        "evaluation_logic_narrative",
+        "execution_narrative",
+        "result_notes",
+        "title",
+        "problem_setup"
+      ]
+    }
+  },
+  {
+    "stage": "S6",
+    "title": "Notebook verification",
+    "summary_lines": [
+      "Status: passed",
+      "Warnings: 0",
+      "Required roles: title, problem_setup, modeling_summary, imports_setup, data_generation, algorithm_core, evaluation_logic, execution, plotting, result_notes"
+    ],
+    "payload": {
+      "status": "passed",
+      "errors": [],
+      "warnings": [],
+      "repair_guidance": [
+        "Notebook verification passed"
+      ],
+      "required_roles": [
+        "title",
+        "problem_setup",
+        "modeling_summary",
+        "imports_setup",
+        "data_generation",
+        "algorithm_core",
+        "evaluation_logic",
+        "execution",
+        "plotting",
+        "result_notes"
+      ],
+      "notebook_summary": {
+        "cells": 15,
+        "code_cells": 6,
+        "markdown_cells": 9,
+        "roles": [
+          "modeling_summary",
+          "imports_setup",
+          "imports_setup_narrative",
+          "data_generation",
+          "data_generation_narrative",
+          "algorithm_core",
+          "algorithm_core_narrative",
+          "evaluation_logic",
+          "evaluation_logic_narrative",
+          "execution",
+          "execution_narrative",
+          "plotting",
+          "result_notes",
+          "title",
+          "problem_setup"
+        ]
+      }
+    }
+  },
+  {
+    "stage": "S7",
+    "title": "Notebook simulation",
+    "summary_lines": [
+      "Status: success",
+      "Execution time: 52.14401721954346s",
+      "Performance fields: primary_metric_name, P_d_at_P_fa_0.01, metric_curve, pfa_curve, theory_empirical_gap, roc_curves, roc_auc, noise_uncertainty_sensitivity"
+    ],
+    "payload": {
+      "status": "success",
+      "evaluation_level": "notebook",
+      "performance_data": {
+        "primary_metric_name": "P_d_at_P_fa_0.01",
+        "P_d_at_P_fa_0.01": {
+          "x": [
+            -20.0,
+            -18.0,
+            -16.0,
+            -14.0,
+            -12.0,
+            -10.0,
+            -8.0,
+            -6.0,
+            -4.0,
+            -2.0,
+            0.0
+          ],
+          "proposed": [
+            0.015397726778449972,
+            0.01954398100838939,
+            0.027943384735659493,
+            0.04689122034533377,
+            0.09501008728959703,
+            0.22571786662607385,
+            0.5323693164158099,
+            0.9022642816981746,
+            0.9986118449253636,
+            0.9999999230331134,
+            0.9999999999999997
+          ],
+          "np_analytic": [
+            0.01603,
+            0.02061,
+            0.02759,
+            0.04753,
+            0.09553,
+            0.22555,
+            0.53127,
+            0.90263,
+            0.99865,
+            1.0,
+            1.0
+          ],
+          "cfar_mc": [
+            0.01487,
+            0.02011,
+            0.02771,
+            0.04866,
+            0.09436,
+            0.22505,
+            0.53145,
+            0.90086,
+            0.99847,
+            1.0,
+            1.0
+          ],
+          "np_optimal": [
+            0.015397726778449972,
+            0.01954398100838939,
+            0.027943384735659493,
+            0.04689122034533377,
+            0.09501008728959703,
+            0.22571786662607385,
+            0.5323693164158099,
+            0.9022642816981746,
+            0.9986118449253636,
+            0.9999999230331134,
+            0.9999999999999997
+          ],
+          "cyclostationary": [
+            0.011666666666666667,
+            0.008,
+            0.013333333333333334,
+            0.02266666666666667,
+            0.022333333333333334,
+            0.029666666666666668,
+            0.063,
+            0.10866666666666666,
+            0.23866666666666667,
+            0.5,
+            0.7946666666666666
+          ],
+          "x_label": "SNR (dB)",
+          "y_label": "P_d at P_fa=0.01"
+        },
+        "metric_curve": {
+          "x": [
+            -20.0,
+            -18.0,
+            -16.0,
+            -14.0,
+            -12.0,
+            -10.0,
+            -8.0,
+            -6.0,
+            -4.0,
+            -2.0,
+            0.0
+          ],
+          "proposed": [
+            0.015397726778449972,
+            0.01954398100838939,
+            0.027943384735659493,
+            0.04689122034533377,
+            0.09501008728959703,
+            0.22571786662607385,
+            0.5323693164158099,
+            0.9022642816981746,
+            0.9986118449253636,
+            0.9999999230331134,
+            0.9999999999999997
+          ],
+          "np_analytic": [
+            0.01603,
+            0.02061,
+            0.02759,
+            0.04753,
+            0.09553,
+            0.22555,
+            0.53127,
+            0.90263,
+            0.99865,
+            1.0,
+            1.0
+          ],
+          "cfar_mc": [
+            0.01487,
+            0.02011,
+            0.02771,
+            0.04866,
+            0.09436,
+            0.22505,
+            0.53145,
+            0.90086,
+            0.99847,
+            1.0,
+            1.0
+          ],
+          "np_optimal": [
+            0.015397726778449972,
+            0.01954398100838939,
+            0.027943384735659493,
+            0.04689122034533377,
+            0.09501008728959703,
+            0.22571786662607385,
+            0.5323693164158099,
+            0.9022642816981746,
+            0.9986118449253636,
+            0.9999999230331134,
+            0.9999999999999997
+          ],
+          "cyclostationary": [
+            0.011666666666666667,
+            0.008,
+            0.013333333333333334,
+            0.02266666666666667,
+            0.022333333333333334,
+            0.029666666666666668,
+            0.063,
+            0.10866666666666666,
+            0.23866666666666667,
+            0.5,
+            0.7946666666666666
+          ],
+          "x_label": "SNR (dB)",
+          "y_label": "Detection Probability Pd @ Pfa=0.01"
+        },
+        "pfa_curve": {
+          "x": [
+            -20.0,
+            -18.0,
+            -16.0,
+            -14.0,
+            -12.0,
+            -10.0,
+            -8.0,
+            -6.0,
+            -4.0,
+            -2.0,
+            0.0
+          ],
+          "np_analytic": [
+            0.01026,
+            0.01007,
+            0.01003,
+            0.00991,
+            0.0097,
+            0.01058,
+            0.01044,
+            0.01,
+            0.01041,
+            0.00991,
+            0.00964
+          ],
+          "cfar_mc": [
+            0.00933,
+            0.00944,
+            0.00976,
+            0.01081,
+            0.01006,
+            0.01034,
+            0.01003,
+            0.00942,
+            0.01002,
+            0.01044,
+            0.00917
+          ],
+          "cyclostationary": [
+            0.007333333333333333,
+            0.008666666666666666,
+            0.015333333333333332,
+            0.011333333333333334,
+            0.011,
+            0.012,
+            0.012666666666666666,
+            0.009666666666666667,
+            0.011,
+            0.015,
+            0.009333333333333334
+          ],
+          "x_label": "SNR (dB)",
+          "y_label": "Empirical Pfa"
+        },
+        "theory_empirical_gap": {
+          "x": [
+            -20.0,
+            -18.0,
+            -16.0,
+            -14.0,
+            -12.0,
+            -10.0,
+            -8.0,
+            -6.0,
+            -4.0,
+            -2.0,
+            0.0
+          ],
+          "np_gap_abs": [
+            0.0006322732215500275,
+            0.0010660189916106115,
+            0.0003533847356594934,
+            0.00063877965466623,
+            0.0005199127104029699,
+            0.00016786662607384817,
+            0.0010993164158098478,
+            0.00036571830182541287,
+            3.815507463644785e-05,
+            7.696688664182716e-08,
+            3.3306690738754696e-16
+          ],
+          "x_label": "SNR (dB)"
+        },
+        "roc_curves": {
+          "-14": {
+            "pfa": [
+              0.0,
+              0.00841,
+              0.01681,
+              0.02521,
+              0.03362,
+              0.04202,
+              0.05042,
+              0.05883,
+              0.06723,
+              0.07563,
+              0.08404,
+              0.09244,
+              0.10084,
+              0.10925,
+              0.11765,
+              0.12605,
+              0.13446,
+              0.14286,
+              0.15126,
+              0.15967,
+              0.16807,
+              0.17647,
+              0.18488,
+              0.19328,
+              0.20168,
+              0.21009,
+              0.21849,
+              0.22689,
+              0.2353,
+              0.2437,
+              0.2521,
+              0.26051,
+              0.26891,
+              0.27731,
+              0.28572,
+              0.29412,
+              0.30252,
+              0.31093,
+              0.31933,
+              0.32773,
+              0.33614,
+              0.34454,
+              0.35294,
+              0.36135,
+              0.36975,
+              0.37815,
+              0.38656,
+              0.39496,
+              0.40336,
+              0.41177,
+              0.42017,
+              0.42857,
+              0.43698,
+              0.44538,
+              0.45378,
+              0.46219,
+              0.47059,
+              0.47899,
+              0.4874,
+              0.4958,
+              0.5042,
+              0.5126,
+              0.52101,
+              0.52941,
+              0.53781,
+              0.54622,
+              0.55462,
+              0.56302,
+              0.57143,
+              0.57983,
+              0.58823,
+              0.59664,
+              0.60504,
+              0.61344,
+              0.62185,
+              0.63025,
+              0.63865,
+              0.64706,
+              0.65546,
+              0.66386,
+              0.67227,
+              0.68067,
+              0.68907,
+              0.69748,
+              0.70588,
+              0.71428,
+              0.72269,
+              0.73109,
+              0.73949,
+              0.7479,
+              0.7563,
+              0.7647,
+              0.77311,
+              0.78151,
+              0.78991,
+              0.79832,
+              0.80672,
+              0.81512,
+              0.82353,
+              0.83193,
+              0.84033,
+              0.84874,
+              0.85714,
+              0.86554,
+              0.87395,
+              0.88235,
+              0.89075,
+              0.89916,
+              0.90756,
+              0.91596,
+              0.92437,
+              0.93277,
+              0.94117,
+              0.94958,
+              0.95798,
+              0.96638,
+              0.97479,
+              0.98319,
+              0.99159,
+              0.99999
+            ],
+            "pd": [
+              9e-05,
+              0.04184,
+              0.06878,
+              0.09502,
+              0.1182,
+              0.13876,
+              0.15969,
+              0.1781,
+              0.19609,
+              0.21394,
+              0.23213,
+              0.24808,
+              0.2633,
+              0.2773,
+              0.29186,
+              0.30504,
+              0.31863,
+              0.33296,
+              0.34589,
+              0.35909,
+              0.37114,
+              0.38336,
+              0.39601,
+              0.40812,
+              0.41935,
+              0.431,
+              0.44254,
+              0.45273,
+              0.46306,
+              0.47423,
+              0.48533,
+              0.49558,
+              0.50591,
+              0.5158,
+              0.52538,
+              0.53429,
+              0.54341,
+              0.55279,
+              0.56253,
+              0.57199,
+              0.58136,
+              0.59102,
+              0.59946,
+              0.6082,
+              0.61697,
+              0.62426,
+              0.63252,
+              0.64097,
+              0.64871,
+              0.65692,
+              0.66456,
+              0.67255,
+              0.68004,
+              0.68741,
+              0.69479,
+              0.7021,
+              0.70954,
+              0.71652,
+              0.72351,
+              0.73011,
+              0.73678,
+              0.74332,
+              0.75018,
+              0.75673,
+              0.76355,
+              0.76943,
+              0.77575,
+              0.7815,
+              0.78772,
+              0.7935,
+              0.79999,
+              0.80562,
+              0.81111,
+              0.81709,
+              0.82332,
+              0.8288,
+              0.83425,
+              0.8397,
+              0.84504,
+              0.85014,
+              0.85538,
+              0.86115,
+              0.86702,
+              0.8724,
+              0.8772,
+              0.88213,
+              0.8873,
+              0.89231,
+              0.89689,
+              0.90167,
+              0.90637,
+              0.9106,
+              0.91509,
+              0.91962,
+              0.92368,
+              0.92775,
+              0.93151,
+              0.93551,
+              0.93951,
+              0.94349,
+              0.94701,
+              0.951,
+              0.95444,
+              0.95826,
+              0.9617,
+              0.96506,
+              0.96837,
+              0.97154,
+              0.97438,
+              0.97728,
+              0.98003,
+              0.9828,
+              0.98515,
+              0.98773,
+              0.99032,
+              0.99264,
+              0.99492,
+              0.99701,
+              0.99878,
+              1.0
+            ]
+          },
+          "-10": {
+            "pfa": [
+              0.0,
+              0.00841,
+              0.01681,
+              0.02521,
+              0.03362,
+              0.04202,
+              0.05042,
+              0.05883,
+              0.06723,
+              0.07563,
+              0.08404,
+              0.09244,
+              0.10084,
+              0.10925,
+              0.11765,
+              0.12605,
+              0.13446,
+              0.14286,
+              0.15126,
+              0.15967,
+              0.16807,
+              0.17647,
+              0.18488,
+              0.19328,
+              0.20168,
+              0.21009,
+              0.21849,
+              0.22689,
+              0.2353,
+              0.2437,
+              0.2521,
+              0.26051,
+              0.26891,
+              0.27731,
+              0.28572,
+              0.29412,
+              0.30252,
+              0.31093,
+              0.31933,
+              0.32773,
+              0.33614,
+              0.34454,
+              0.35294,
+              0.36135,
+              0.36975,
+              0.37815,
+              0.38656,
+              0.39496,
+              0.40336,
+              0.41177,
+              0.42017,
+              0.42857,
+              0.43698,
+              0.44538,
+              0.45378,
+              0.46219,
+              0.47059,
+              0.47899,
+              0.4874,
+              0.4958,
+              0.5042,
+              0.5126,
+              0.52101,
+              0.52941,
+              0.53781,
+              0.54622,
+              0.55462,
+              0.56302,
+              0.57143,
+              0.57983,
+              0.58823,
+              0.59664,
+              0.60504,
+              0.61344,
+              0.62185,
+              0.63025,
+              0.63865,
+              0.64706,
+              0.65546,
+              0.66386,
+              0.67227,
+              0.68067,
+              0.68907,
+              0.69748,
+              0.70588,
+              0.71428,
+              0.72269,
+              0.73109,
+              0.73949,
+              0.7479,
+              0.7563,
+              0.7647,
+              0.77311,
+              0.78151,
+              0.78991,
+              0.79832,
+              0.80672,
+              0.81512,
+              0.82353,
+              0.83193,
+              0.84033,
+              0.84874,
+              0.85714,
+              0.86554,
+              0.87395,
+              0.88235,
+              0.89075,
+              0.89916,
+              0.90756,
+              0.91596,
+              0.92437,
+              0.93277,
+              0.94117,
+              0.94958,
+              0.95798,
+              0.96638,
+              0.97479,
+              0.98319,
+              0.99159,
+              0.99999
+            ],
+            "pd": [
+              0.00485,
+              0.20184,
+              0.28141,
+              0.342,
+              0.38936,
+              0.42727,
+              0.46198,
+              0.49247,
+              0.51738,
+              0.54134,
+              0.5623,
+              0.58194,
+              0.60014,
+              0.61782,
+              0.63462,
+              0.64996,
+              0.66457,
+              0.67785,
+              0.69139,
+              0.70339,
+              0.71359,
+              0.72468,
+              0.73523,
+              0.74509,
+              0.75487,
+              0.76378,
+              0.77206,
+              0.7808,
+              0.78885,
+              0.79684,
+              0.80448,
+              0.81199,
+              0.81844,
+              0.82465,
+              0.83072,
+              0.83635,
+              0.8421,
+              0.84832,
+              0.85381,
+              0.85906,
+              0.86391,
+              0.86866,
+              0.87295,
+              0.87736,
+              0.88153,
+              0.88585,
+              0.88984,
+              0.89396,
+              0.89784,
+              0.90129,
+              0.90522,
+              0.90919,
+              0.91235,
+              0.91576,
+              0.91868,
+              0.92186,
+              0.92492,
+              0.92784,
+              0.93122,
+              0.9338,
+              0.93628,
+              0.93884,
+              0.94113,
+              0.94335,
+              0.94589,
+              0.94818,
+              0.95058,
+              0.95276,
+              0.95454,
+              0.95614,
+              0.95799,
+              0.95993,
+              0.96193,
+              0.96376,
+              0.96554,
+              0.96698,
+              0.96866,
+              0.9701,
+              0.97158,
+              0.97281,
+              0.97412,
+              0.97521,
+              0.97651,
+              0.97768,
+              0.979,
+              0.98,
+              0.98115,
+              0.98223,
+              0.98339,
+              0.98463,
+              0.98553,
+              0.98641,
+              0.98734,
+              0.9882,
+              0.98907,
+              0.9899,
+              0.99053,
+              0.99136,
+              0.99199,
+              0.99253,
+              0.99315,
+              0.99376,
+              0.9943,
+              0.99485,
+              0.99531,
+              0.99591,
+              0.99639,
+              0.99675,
+              0.99727,
+              0.99768,
+              0.99802,
+              0.9984,
+              0.99863,
+              0.99895,
+              0.99923,
+              0.99946,
+              0.99964,
+              0.99979,
+              0.99992,
+              1.0
+            ]
+          },
+          "-6": {
+            "pfa": [
+              0.0,
+              0.00841,
+              0.01681,
+              0.02521,
+              0.03362,
+              0.04202,
+              0.05042,
+              0.05883,
+              0.06723,
+              0.07563,
+              0.08404,
+              0.09244,
+              0.10084,
+              0.10925,
+              0.11765,
+              0.12605,
+              0.13446,
+              0.14286,
+              0.15126,
+              0.15967,
+              0.16807,
+              0.17647,
+              0.18488,
+              0.19328,
+              0.20168,
+              0.21009,
+              0.21849,
+              0.22689,
+              0.2353,
+              0.2437,
+              0.2521,
+              0.26051,
+              0.26891,
+              0.27731,
+              0.28572,
+              0.29412,
+              0.30252,
+              0.31093,
+              0.31933,
+              0.32773,
+              0.33614,
+              0.34454,
+              0.35294,
+              0.36135,
+              0.36975,
+              0.37815,
+              0.38656,
+              0.39496,
+              0.40336,
+              0.41177,
+              0.42017,
+              0.42857,
+              0.43698,
+              0.44538,
+              0.45378,
+              0.46219,
+              0.47059,
+              0.47899,
+              0.4874,
+              0.4958,
+              0.5042,
+              0.5126,
+              0.52101,
+              0.52941,
+              0.53781,
+              0.54622,
+              0.55462,
+              0.56302,
+              0.57143,
+              0.57983,
+              0.58823,
+              0.59664,
+              0.60504,
+              0.61344,
+              0.62185,
+              0.63025,
+              0.63865,
+              0.64706,
+              0.65546,
+              0.66386,
+              0.67227,
+              0.68067,
+              0.68907,
+              0.69748,
+              0.70588,
+              0.71428,
+              0.72269,
+              0.73109,
+              0.73949,
+              0.7479,
+              0.7563,
+              0.7647,
+              0.77311,
+              0.78151,
+              0.78991,
+              0.79832,
+              0.80672,
+              0.81512,
+              0.82353,
+              0.83193,
+              0.84033,
+              0.84874,
+              0.85714,
+              0.86554,
+              0.87395,
+              0.88235,
+              0.89075,
+              0.89916,
+              0.90756,
+              0.91596,
+              0.92437,
+              0.93277,
+              0.94117,
+              0.94958,
+              0.95798,
+              0.96638,
+              0.97479,
+              0.98319,
+              0.99159,
+              0.99999
+            ],
+            "pd": [
+              0.16273,
+              0.89117,
+              0.93148,
+              0.94994,
+              0.96075,
+              0.96798,
+              0.97309,
+              0.97769,
+              0.98068,
+              0.98322,
+              0.98533,
+              0.98709,
+              0.98854,
+              0.99,
+              0.99097,
+              0.99194,
+              0.99276,
+              0.99333,
+              0.99398,
+              0.99448,
+              0.995,
+              0.99544,
+              0.99592,
+              0.99632,
+              0.9966,
+              0.99692,
+              0.99713,
+              0.99734,
+              0.99751,
+              0.99764,
+              0.99776,
+              0.99792,
+              0.99808,
+              0.99824,
+              0.9984,
+              0.99854,
+              0.99866,
+              0.99873,
+              0.99886,
+              0.99891,
+              0.99895,
+              0.99909,
+              0.99914,
+              0.99922,
+              0.99926,
+              0.99929,
+              0.99934,
+              0.99936,
+              0.9994,
+              0.99943,
+              0.99948,
+              0.99952,
+              0.99954,
+              0.99959,
+              0.9996,
+              0.99961,
+              0.99963,
+              0.99966,
+              0.99968,
+              0.99972,
+              0.99973,
+              0.99974,
+              0.99976,
+              0.99976,
+              0.99978,
+              0.99983,
+              0.99984,
+              0.99985,
+              0.99987,
+              0.99987,
+              0.99987,
+              0.99987,
+              0.99987,
+              0.99987,
+              0.99988,
+              0.9999,
+              0.99991,
+              0.99991,
+              0.99992,
+              0.99992,
+              0.99992,
+              0.99992,
+              0.99992,
+              0.99994,
+              0.99994,
+              0.99995,
+              0.99995,
+              0.99995,
+              0.99995,
+              0.99995,
+              0.99995,
+              0.99995,
+              0.99995,
+              0.99997,
+              0.99997,
+              0.99997,
+              0.99997,
+              0.99998,
+              0.99998,
+              0.99998,
+              0.99999,
+              0.99999,
+              0.99999,
+              0.99999,
+              0.99999,
+              0.99999,
+              0.99999,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0,
+              1.0
+            ]
+          }
+        },
+        "roc_auc": {
+          "-14": 0.6714116208000002,
+          "-10": 0.8591667789499999,
+          "-6": 0.9919212707000001
+        },
+        "noise_uncertainty_sensitivity": {
+          "x": [
+            -1.0,
+            0.0,
+            1.0
+          ],
+          "pd_np_analytic": [
+            0.0,
+            0.22731,
+            0.99775
+          ],
+          "pfa_np_analytic": [
+            0.0,
+            0.01026,
+            0.91709
+          ],
+          "x_label": "Noise power mismatch (dB)"
+        },
+        "snapshot_sensitivity": {
+          "x": [
+            64,
+            128,
+            256,
+            512
+          ],
+          "proposed": [
+            0.0663402710382851,
+            0.11649396988680105,
+            0.22571786662607385,
+            0.44779204172005627
+          ],
+          "np_analytic": [
+            0.06664,
+            0.11668,
+            0.22642,
+            0.44761
+          ],
+          "cfar_mc": [
+            0.06619,
+            0.11518,
+            0.2244,
+            0.45249
+          ],
+          "cyclostationary": [
+            0.03166666666666667,
+            0.015666666666666666,
+            0.036,
+            0.029
+          ],
+          "x_label": "Number of samples N"
+        },
+        "runtime_ms_per_interval": 0.015500217594539704,
+        "complexity_ops_per_interval": 1536,
+        "thresholds": {
+          "0.01": 294.6852712830842,
+          "0.05": 282.8737921622988,
+          "0.1": 276.70701233226583
+        },
+        "pd_theory_map": {
+          "0.01": [
+            0.015397726778449972,
+            0.01954398100838939,
+            0.027943384735659493,
+            0.04689122034533377,
+            0.09501008728959703,
+            0.22571786662607385,
+            0.5323693164158099,
+            0.9022642816981746,
+            0.9986118449253636,
+            0.9999999230331134,
+            0.9999999999999997
+          ],
+          "0.05": [
+            0.06936842825510992,
+            0.0829659381825637,
+            0.1082040458354192,
+            0.15787323762705396,
+            0.26011647593076437,
+            0.4629147735934833,
+            0.7672624017357421,
+            0.973006526347979,
+            0.999841796996103,
+            0.9999999972073982,
+            1.0
+          ],
+          "0.1": [
+            0.13169192393843732,
+            0.15291358131036648,
+            0.19055212391378873,
+            0.2595654302044059,
+            0.3870220786954881,
+            0.6020943352710144,
+            0.858976908314891,
+            0.9882188699102279,
+            0.9999569703360253,
+            0.9999999995839706,
+            1.0
+          ]
+        }
+      },
+      "algorithm": "Closed-Form NP Energy Detector with Vectorized Monte Carlo Validation",
+      "elapsed_sec": 49.852090375032276,
+      "execution_time": 52.14401721954346,
+      "eval_config": {
+        "variable_points": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "num_trials": 20,
+        "primary_metrics": [
+          "P_d_at_P_fa_0.01"
+        ],
+        "baseline_methods": [],
+        "system_model": {
+          "waveform": "custom",
+          "antenna_config": {
+            "num_tx": 1,
+            "num_rx": 1,
+            "array_type": "other",
+            "additional_elements": {}
+          },
+          "channel_model": "AWGN",
+          "operating_conditions": {
+            "carrier_freq_ghz": null,
+            "bandwidth_mhz": null,
+            "mobility_kmh": null
+          },
+          "additional_params": {
+            "num_samples_per_interval": 256,
+            "hypotheses": {
+              "H0": "y[n]=w[n], w[n]~CN(0,sigma_w2)",
+              "H1": "y[n]=s[n]+w[n], s[n]~CN(0,gamma*sigma_w2), effective SNR=gamma"
+            },
+            "detector_type": "Neyman-Pearson energy detector (radiometer)",
+            "test_statistic": "U=(1/sigma_w2)*sum_{n=1}^{N}|y[n]|^2",
+            "threshold_setting": "eta=0.5*chi2inv(1-P_fa,2N), P_fa=0.01, N=256",
+            "decision_rule": "decide H1 if U>eta else H0",
+            "theoretical_pd_expression": "P_d(gamma)=Q_N(sqrt(2N*gamma),sqrt(2*eta)) (equivalently survival function of noncentral chi-square with dof=2N and noncentrality=2N*gamma)",
+            "snr_sweep_db": [
+              -20,
+              -18,
+              -16,
+              -14,
+              -12,
+              -10,
+              -8,
+              -6,
+              -4,
+              -2,
+              0
+            ],
+            "monte_carlo": {
+              "num_trials_per_snr": 100000,
+              "noise_model": "complex Gaussian",
+              "signal_model_under_H1": "complex Gaussian primary signal with power set by SNR",
+              "estimated_outputs": [
+                "empirical_P_fa",
+                "empirical_P_d",
+                "theoretical_P_d_overlay",
+                "roc_curve",
+                "runtime_ms_per_interval"
+              ],
+              "random_seed": 2026
+            },
+            "roc_configuration": {
+              "fixed_pfa_points": [
+                0.01,
+                0.05,
+                0.1
+              ],
+              "generate_full_roc": true
+            },
+            "robustness_checks": {
+              "enable_noise_uncertainty_test": true,
+              "noise_power_mismatch_db": [
+                -1.0,
+                0.0,
+                1.0
+              ],
+              "note": "Used as secondary analysis to expose ED sensitivity; core objective remains ideal-AWGN NP validation."
+            }
+          },
+          "channel_properties": [
+            "additive_white_gaussian_noise",
+            "frequency_flat",
+            "flat_fading_compensated",
+            "memoryless_within_interval"
+          ]
+        },
+        "performance_targets": {
+          "primary_metric": "P_d_at_P_fa_0.01",
+          "secondary_metrics": [
+            "P_fa_constraint_satisfaction",
+            "theory_simulation_Pd_gap",
+            "ROC_AUC",
+            "complexity_ops_per_interval",
+            "runtime_ms_per_interval"
+          ],
+          "theoretical_bound": "Neyman-Pearson optimality for fixed P_fa when using energy as the chosen test statistic under AWGN with known noise variance.",
+          "baseline_algorithms": [
+            "NP energy detector with analytic threshold (primary baseline)",
+            "Monte Carlo-calibrated CFAR energy threshold (consistency baseline)",
+            "Cyclostationary feature detector (optional robustness/complexity reference only)"
+          ],
+          "target_value": {
+            "P_fa_max": 0.01,
+            "min_snr_db_for_evaluation": -10,
+            "max_abs_theory_empirical_pd_gap": 0.02
+          }
+        },
+        "constraints": {
+          "complexity": "O(N) operations per sensing interval for the primary detector; no matrix inversion; real-time feasible on low-compute nodes.",
+          "data_availability": "no_training_data"
+        }
+      },
+      "raw_results": {
+        "algorithm": "Closed-Form NP Energy Detector with Vectorized Monte Carlo Validation",
+        "elapsed_sec": 49.852090375032276,
+        "performance_data": {
+          "primary_metric_name": "P_d_at_P_fa_0.01",
+          "P_d_at_P_fa_0.01": {
+            "x": [
+              -20.0,
+              -18.0,
+              -16.0,
+              -14.0,
+              -12.0,
+              -10.0,
+              -8.0,
+              -6.0,
+              -4.0,
+              -2.0,
+              0.0
+            ],
+            "proposed": [
+              0.015397726778449972,
+              0.01954398100838939,
+              0.027943384735659493,
+              0.04689122034533377,
+              0.09501008728959703,
+              0.22571786662607385,
+              0.5323693164158099,
+              0.9022642816981746,
+              0.9986118449253636,
+              0.9999999230331134,
+              0.9999999999999997
+            ],
+            "np_analytic": [
+              0.01603,
+              0.02061,
+              0.02759,
+              0.04753,
+              0.09553,
+              0.22555,
+              0.53127,
+              0.90263,
+              0.99865,
+              1.0,
+              1.0
+            ],
+            "cfar_mc": [
+              0.01487,
+              0.02011,
+              0.02771,
+              0.04866,
+              0.09436,
+              0.22505,
+              0.53145,
+              0.90086,
+              0.99847,
+              1.0,
+              1.0
+            ],
+            "np_optimal": [
+              0.015397726778449972,
+              0.01954398100838939,
+              0.027943384735659493,
+              0.04689122034533377,
+              0.09501008728959703,
+              0.22571786662607385,
+              0.5323693164158099,
+              0.9022642816981746,
+              0.9986118449253636,
+              0.9999999230331134,
+              0.9999999999999997
+            ],
+            "cyclostationary": [
+              0.011666666666666667,
+              0.008,
+              0.013333333333333334,
+              0.02266666666666667,
+              0.022333333333333334,
+              0.029666666666666668,
+              0.063,
+              0.10866666666666666,
+              0.23866666666666667,
+              0.5,
+              0.7946666666666666
+            ],
+            "x_label": "SNR (dB)",
+            "y_label": "P_d at P_fa=0.01"
+          },
+          "metric_curve": {
+            "x": [
+              -20.0,
+              -18.0,
+              -16.0,
+              -14.0,
+              -12.0,
+              -10.0,
+              -8.0,
+              -6.0,
+              -4.0,
+              -2.0,
+              0.0
+            ],
+            "proposed": [
+              0.015397726778449972,
+              0.01954398100838939,
+              0.027943384735659493,
+              0.04689122034533377,
+              0.09501008728959703,
+              0.22571786662607385,
+              0.5323693164158099,
+              0.9022642816981746,
+              0.9986118449253636,
+              0.9999999230331134,
+              0.9999999999999997
+            ],
+            "np_analytic": [
+              0.01603,
+              0.02061,
+              0.02759,
+              0.04753,
+              0.09553,
+              0.22555,
+              0.53127,
+              0.90263,
+              0.99865,
+              1.0,
+              1.0
+            ],
+            "cfar_mc": [
+              0.01487,
+              0.02011,
+              0.02771,
+              0.04866,
+              0.09436,
+              0.22505,
+              0.53145,
+              0.90086,
+              0.99847,
+              1.0,
+              1.0
+            ],
+            "np_optimal": [
+              0.015397726778449972,
+              0.01954398100838939,
+              0.027943384735659493,
+              0.04689122034533377,
+              0.09501008728959703,
+              0.22571786662607385,
+              0.5323693164158099,
+              0.9022642816981746,
+              0.9986118449253636,
+              0.9999999230331134,
+              0.9999999999999997
+            ],
+            "cyclostationary": [
+              0.011666666666666667,
+              0.008,
+              0.013333333333333334,
+              0.02266666666666667,
+              0.022333333333333334,
+              0.029666666666666668,
+              0.063,
+              0.10866666666666666,
+              0.23866666666666667,
+              0.5,
+              0.7946666666666666
+            ],
+            "x_label": "SNR (dB)",
+            "y_label": "Detection Probability Pd @ Pfa=0.01"
+          },
+          "pfa_curve": {
+            "x": [
+              -20.0,
+              -18.0,
+              -16.0,
+              -14.0,
+              -12.0,
+              -10.0,
+              -8.0,
+              -6.0,
+              -4.0,
+              -2.0,
+              0.0
+            ],
+            "np_analytic": [
+              0.01026,
+              0.01007,
+              0.01003,
+              0.00991,
+              0.0097,
+              0.01058,
+              0.01044,
+              0.01,
+              0.01041,
+              0.00991,
+              0.00964
+            ],
+            "cfar_mc": [
+              0.00933,
+              0.00944,
+              0.00976,
+              0.01081,
+              0.01006,
+              0.01034,
+              0.01003,
+              0.00942,
+              0.01002,
+              0.01044,
+              0.00917
+            ],
+            "cyclostationary": [
+              0.007333333333333333,
+              0.008666666666666666,
+              0.015333333333333332,
+              0.011333333333333334,
+              0.011,
+              0.012,
+              0.012666666666666666,
+              0.009666666666666667,
+              0.011,
+              0.015,
+              0.009333333333333334
+            ],
+            "x_label": "SNR (dB)",
+            "y_label": "Empirical Pfa"
+          },
+          "theory_empirical_gap": {
+            "x": [
+              -20.0,
+              -18.0,
+              -16.0,
+              -14.0,
+              -12.0,
+              -10.0,
+              -8.0,
+              -6.0,
+              -4.0,
+              -2.0,
+              0.0
+            ],
+            "np_gap_abs": [
+              0.0006322732215500275,
+              0.0010660189916106115,
+              0.0003533847356594934,
+              0.00063877965466623,
+              0.0005199127104029699,
+              0.00016786662607384817,
+              0.0010993164158098478,
+              0.00036571830182541287,
+              3.815507463644785e-05,
+              7.696688664182716e-08,
+              3.3306690738754696e-16
+            ],
+            "x_label": "SNR (dB)"
+          },
+          "roc_curves": {
+            "-14": {
+              "pfa": [
+                0.0,
+                0.00841,
+                0.01681,
+                0.02521,
+                0.03362,
+                0.04202,
+                0.05042,
+                0.05883,
+                0.06723,
+                0.07563,
+                0.08404,
+                0.09244,
+                0.10084,
+                0.10925,
+                0.11765,
+                0.12605,
+                0.13446,
+                0.14286,
+                0.15126,
+                0.15967,
+                0.16807,
+                0.17647,
+                0.18488,
+                0.19328,
+                0.20168,
+                0.21009,
+                0.21849,
+                0.22689,
+                0.2353,
+                0.2437,
+                0.2521,
+                0.26051,
+                0.26891,
+                0.27731,
+                0.28572,
+                0.29412,
+                0.30252,
+                0.31093,
+                0.31933,
+                0.32773,
+                0.33614,
+                0.34454,
+                0.35294,
+                0.36135,
+                0.36975,
+                0.37815,
+                0.38656,
+                0.39496,
+                0.40336,
+                0.41177,
+                0.42017,
+                0.42857,
+                0.43698,
+                0.44538,
+                0.45378,
+                0.46219,
+                0.47059,
+                0.47899,
+                0.4874,
+                0.4958,
+                0.5042,
+                0.5126,
+                0.52101,
+                0.52941,
+                0.53781,
+                0.54622,
+                0.55462,
+                0.56302,
+                0.57143,
+                0.57983,
+                0.58823,
+                0.59664,
+                0.60504,
+                0.61344,
+                0.62185,
+                0.63025,
+                0.63865,
+                0.64706,
+                0.65546,
+                0.66386,
+                0.67227,
+                0.68067,
+                0.68907,
+                0.69748,
+                0.70588,
+                0.71428,
+                0.72269,
+                0.73109,
+                0.73949,
+                0.7479,
+                0.7563,
+                0.7647,
+                0.77311,
+                0.78151,
+                0.78991,
+                0.79832,
+                0.80672,
+                0.81512,
+                0.82353,
+                0.83193,
+                0.84033,
+                0.84874,
+                0.85714,
+                0.86554,
+                0.87395,
+                0.88235,
+                0.89075,
+                0.89916,
+                0.90756,
+                0.91596,
+                0.92437,
+                0.93277,
+                0.94117,
+                0.94958,
+                0.95798,
+                0.96638,
+                0.97479,
+                0.98319,
+                0.99159,
+                0.99999
+              ],
+              "pd": [
+                9e-05,
+                0.04184,
+                0.06878,
+                0.09502,
+                0.1182,
+                0.13876,
+                0.15969,
+                0.1781,
+                0.19609,
+                0.21394,
+                0.23213,
+                0.24808,
+                0.2633,
+                0.2773,
+                0.29186,
+                0.30504,
+                0.31863,
+                0.33296,
+                0.34589,
+                0.35909,
+                0.37114,
+                0.38336,
+                0.39601,
+                0.40812,
+                0.41935,
+                0.431,
+                0.44254,
+                0.45273,
+                0.46306,
+                0.47423,
+                0.48533,
+                0.49558,
+                0.50591,
+                0.5158,
+                0.52538,
+                0.53429,
+                0.54341,
+                0.55279,
+                0.56253,
+                0.57199,
+                0.58136,
+                0.59102,
+                0.59946,
+                0.6082,
+                0.61697,
+                0.62426,
+                0.63252,
+                0.64097,
+                0.64871,
+                0.65692,
+                0.66456,
+                0.67255,
+                0.68004,
+                0.68741,
+                0.69479,
+                0.7021,
+                0.70954,
+                0.71652,
+                0.72351,
+                0.73011,
+                0.73678,
+                0.74332,
+                0.75018,
+                0.75673,
+                0.76355,
+                0.76943,
+                0.77575,
+                0.7815,
+                0.78772,
+                0.7935,
+                0.79999,
+                0.80562,
+                0.81111,
+                0.81709,
+                0.82332,
+                0.8288,
+                0.83425,
+                0.8397,
+                0.84504,
+                0.85014,
+                0.85538,
+                0.86115,
+                0.86702,
+                0.8724,
+                0.8772,
+                0.88213,
+                0.8873,
+                0.89231,
+                0.89689,
+                0.90167,
+                0.90637,
+                0.9106,
+                0.91509,
+                0.91962,
+                0.92368,
+                0.92775,
+                0.93151,
+                0.93551,
+                0.93951,
+                0.94349,
+                0.94701,
+                0.951,
+                0.95444,
+                0.95826,
+                0.9617,
+                0.96506,
+                0.96837,
+                0.97154,
+                0.97438,
+                0.97728,
+                0.98003,
+                0.9828,
+                0.98515,
+                0.98773,
+                0.99032,
+                0.99264,
+                0.99492,
+                0.99701,
+                0.99878,
+                1.0
+              ]
+            },
+            "-10": {
+              "pfa": [
+                0.0,
+                0.00841,
+                0.01681,
+                0.02521,
+                0.03362,
+                0.04202,
+                0.05042,
+                0.05883,
+                0.06723,
+                0.07563,
+                0.08404,
+                0.09244,
+                0.10084,
+                0.10925,
+                0.11765,
+                0.12605,
+                0.13446,
+                0.14286,
+                0.15126,
+                0.15967,
+                0.16807,
+                0.17647,
+                0.18488,
+                0.19328,
+                0.20168,
+                0.21009,
+                0.21849,
+                0.22689,
+                0.2353,
+                0.2437,
+                0.2521,
+                0.26051,
+                0.26891,
+                0.27731,
+                0.28572,
+                0.29412,
+                0.30252,
+                0.31093,
+                0.31933,
+                0.32773,
+                0.33614,
+                0.34454,
+                0.35294,
+                0.36135,
+                0.36975,
+                0.37815,
+                0.38656,
+                0.39496,
+                0.40336,
+                0.41177,
+                0.42017,
+                0.42857,
+                0.43698,
+                0.44538,
+                0.45378,
+                0.46219,
+                0.47059,
+                0.47899,
+                0.4874,
+                0.4958,
+                0.5042,
+                0.5126,
+                0.52101,
+                0.52941,
+                0.53781,
+                0.54622,
+                0.55462,
+                0.56302,
+                0.57143,
+                0.57983,
+                0.58823,
+                0.59664,
+                0.60504,
+                0.61344,
+                0.62185,
+                0.63025,
+                0.63865,
+                0.64706,
+                0.65546,
+                0.66386,
+                0.67227,
+                0.68067,
+                0.68907,
+                0.69748,
+                0.70588,
+                0.71428,
+                0.72269,
+                0.73109,
+                0.73949,
+                0.7479,
+                0.7563,
+                0.7647,
+                0.77311,
+                0.78151,
+                0.78991,
+                0.79832,
+                0.80672,
+                0.81512,
+                0.82353,
+                0.83193,
+                0.84033,
+                0.84874,
+                0.85714,
+                0.86554,
+                0.87395,
+                0.88235,
+                0.89075,
+                0.89916,
+                0.90756,
+                0.91596,
+                0.92437,
+                0.93277,
+                0.94117,
+                0.94958,
+                0.95798,
+                0.96638,
+                0.97479,
+                0.98319,
+                0.99159,
+                0.99999
+              ],
+              "pd": [
+                0.00485,
+                0.20184,
+                0.28141,
+                0.342,
+                0.38936,
+                0.42727,
+                0.46198,
+                0.49247,
+                0.51738,
+                0.54134,
+                0.5623,
+                0.58194,
+                0.60014,
+                0.61782,
+                0.63462,
+                0.64996,
+                0.66457,
+                0.67785,
+                0.69139,
+                0.70339,
+                0.71359,
+                0.72468,
+                0.73523,
+                0.74509,
+                0.75487,
+                0.76378,
+                0.77206,
+                0.7808,
+                0.78885,
+                0.79684,
+                0.80448,
+                0.81199,
+                0.81844,
+                0.82465,
+                0.83072,
+                0.83635,
+                0.8421,
+                0.84832,
+                0.85381,
+                0.85906,
+                0.86391,
+                0.86866,
+                0.87295,
+                0.87736,
+                0.88153,
+                0.88585,
+                0.88984,
+                0.89396,
+                0.89784,
+                0.90129,
+                0.90522,
+                0.90919,
+                0.91235,
+                0.91576,
+                0.91868,
+                0.92186,
+                0.92492,
+                0.92784,
+                0.93122,
+                0.9338,
+                0.93628,
+                0.93884,
+                0.94113,
+                0.94335,
+                0.94589,
+                0.94818,
+                0.95058,
+                0.95276,
+                0.95454,
+                0.95614,
+                0.95799,
+                0.95993,
+                0.96193,
+                0.96376,
+                0.96554,
+                0.96698,
+                0.96866,
+                0.9701,
+                0.97158,
+                0.97281,
+                0.97412,
+                0.97521,
+                0.97651,
+                0.97768,
+                0.979,
+                0.98,
+                0.98115,
+                0.98223,
+                0.98339,
+                0.98463,
+                0.98553,
+                0.98641,
+                0.98734,
+                0.9882,
+                0.98907,
+                0.9899,
+                0.99053,
+                0.99136,
+                0.99199,
+                0.99253,
+                0.99315,
+                0.99376,
+                0.9943,
+                0.99485,
+                0.99531,
+                0.99591,
+                0.99639,
+                0.99675,
+                0.99727,
+                0.99768,
+                0.99802,
+                0.9984,
+                0.99863,
+                0.99895,
+                0.99923,
+                0.99946,
+                0.99964,
+                0.99979,
+                0.99992,
+                1.0
+              ]
+            },
+            "-6": {
+              "pfa": [
+                0.0,
+                0.00841,
+                0.01681,
+                0.02521,
+                0.03362,
+                0.04202,
+                0.05042,
+                0.05883,
+                0.06723,
+                0.07563,
+                0.08404,
+                0.09244,
+                0.10084,
+                0.10925,
+                0.11765,
+                0.12605,
+                0.13446,
+                0.14286,
+                0.15126,
+                0.15967,
+                0.16807,
+                0.17647,
+                0.18488,
+                0.19328,
+                0.20168,
+                0.21009,
+                0.21849,
+                0.22689,
+                0.2353,
+                0.2437,
+                0.2521,
+                0.26051,
+                0.26891,
+                0.27731,
+                0.28572,
+                0.29412,
+                0.30252,
+                0.31093,
+                0.31933,
+                0.32773,
+                0.33614,
+                0.34454,
+                0.35294,
+                0.36135,
+                0.36975,
+                0.37815,
+                0.38656,
+                0.39496,
+                0.40336,
+                0.41177,
+                0.42017,
+                0.42857,
+                0.43698,
+                0.44538,
+                0.45378,
+                0.46219,
+                0.47059,
+                0.47899,
+                0.4874,
+                0.4958,
+                0.5042,
+                0.5126,
+                0.52101,
+                0.52941,
+                0.53781,
+                0.54622,
+                0.55462,
+                0.56302,
+                0.57143,
+                0.57983,
+                0.58823,
+                0.59664,
+                0.60504,
+                0.61344,
+                0.62185,
+                0.63025,
+                0.63865,
+                0.64706,
+                0.65546,
+                0.66386,
+                0.67227,
+                0.68067,
+                0.68907,
+                0.69748,
+                0.70588,
+                0.71428,
+                0.72269,
+                0.73109,
+                0.73949,
+                0.7479,
+                0.7563,
+                0.7647,
+                0.77311,
+                0.78151,
+                0.78991,
+                0.79832,
+                0.80672,
+                0.81512,
+                0.82353,
+                0.83193,
+                0.84033,
+                0.84874,
+                0.85714,
+                0.86554,
+                0.87395,
+                0.88235,
+                0.89075,
+                0.89916,
+                0.90756,
+                0.91596,
+                0.92437,
+                0.93277,
+                0.94117,
+                0.94958,
+                0.95798,
+                0.96638,
+                0.97479,
+                0.98319,
+                0.99159,
+                0.99999
+              ],
+              "pd": [
+                0.16273,
+                0.89117,
+                0.93148,
+                0.94994,
+                0.96075,
+                0.96798,
+                0.97309,
+                0.97769,
+                0.98068,
+                0.98322,
+                0.98533,
+                0.98709,
+                0.98854,
+                0.99,
+                0.99097,
+                0.99194,
+                0.99276,
+                0.99333,
+                0.99398,
+                0.99448,
+                0.995,
+                0.99544,
+                0.99592,
+                0.99632,
+                0.9966,
+                0.99692,
+                0.99713,
+                0.99734,
+                0.99751,
+                0.99764,
+                0.99776,
+                0.99792,
+                0.99808,
+                0.99824,
+                0.9984,
+                0.99854,
+                0.99866,
+                0.99873,
+                0.99886,
+                0.99891,
+                0.99895,
+                0.99909,
+                0.99914,
+                0.99922,
+                0.99926,
+                0.99929,
+                0.99934,
+                0.99936,
+                0.9994,
+                0.99943,
+                0.99948,
+                0.99952,
+                0.99954,
+                0.99959,
+                0.9996,
+                0.99961,
+                0.99963,
+                0.99966,
+                0.99968,
+                0.99972,
+                0.99973,
+                0.99974,
+                0.99976,
+                0.99976,
+                0.99978,
+                0.99983,
+                0.99984,
+                0.99985,
+                0.99987,
+                0.99987,
+                0.99987,
+                0.99987,
+                0.99987,
+                0.99987,
+                0.99988,
+                0.9999,
+                0.99991,
+                0.99991,
+                0.99992,
+                0.99992,
+                0.99992,
+                0.99992,
+                0.99992,
+                0.99994,
+                0.99994,
+                0.99995,
+                0.99995,
+                0.99995,
+                0.99995,
+                0.99995,
+                0.99995,
+                0.99995,
+                0.99995,
+                0.99997,
+                0.99997,
+                0.99997,
+                0.99997,
+                0.99998,
+                0.99998,
+                0.99998,
+                0.99999,
+                0.99999,
+                0.99999,
+                0.99999,
+                0.99999,
+                0.99999,
+                0.99999,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            }
+          },
+          "roc_auc": {
+            "-14": 0.6714116208000002,
+            "-10": 0.8591667789499999,
+            "-6": 0.9919212707000001
+          },
+          "noise_uncertainty_sensitivity": {
+            "x": [
+              -1.0,
+              0.0,
+              1.0
+            ],
+            "pd_np_analytic": [
+              0.0,
+              0.22731,
+              0.99775
+            ],
+            "pfa_np_analytic": [
+              0.0,
+              0.01026,
+              0.91709
+            ],
+            "x_label": "Noise power mismatch (dB)"
+          },
+          "snapshot_sensitivity": {
+            "x": [
+              64,
+              128,
+              256,
+              512
+            ],
+            "proposed": [
+              0.0663402710382851,
+              0.11649396988680105,
+              0.22571786662607385,
+              0.44779204172005627
+            ],
+            "np_analytic": [
+              0.06664,
+              0.11668,
+              0.22642,
+              0.44761
+            ],
+            "cfar_mc": [
+              0.06619,
+              0.11518,
+              0.2244,
+              0.45249
+            ],
+            "cyclostationary": [
+              0.03166666666666667,
+              0.015666666666666666,
+              0.036,
+              0.029
+            ],
+            "x_label": "Number of samples N"
+          },
+          "runtime_ms_per_interval": 0.015500217594539704,
+          "complexity_ops_per_interval": 1536,
+          "thresholds": {
+            "0.01": 294.6852712830842,
+            "0.05": 282.8737921622988,
+            "0.1": 276.70701233226583
+          },
+          "pd_theory_map": {
+            "0.01": [
+              0.015397726778449972,
+              0.01954398100838939,
+              0.027943384735659493,
+              0.04689122034533377,
+              0.09501008728959703,
+              0.22571786662607385,
+              0.5323693164158099,
+              0.9022642816981746,
+              0.9986118449253636,
+              0.9999999230331134,
+              0.9999999999999997
+            ],
+            "0.05": [
+              0.06936842825510992,
+              0.0829659381825637,
+              0.1082040458354192,
+              0.15787323762705396,
+              0.26011647593076437,
+              0.4629147735934833,
+              0.7672624017357421,
+              0.973006526347979,
+              0.999841796996103,
+              0.9999999972073982,
+              1.0
+            ],
+            "0.1": [
+              0.13169192393843732,
+              0.15291358131036648,
+              0.19055212391378873,
+              0.2595654302044059,
+              0.3870220786954881,
+              0.6020943352710144,
+              0.858976908314891,
+              0.9882188699102279,
+              0.9999569703360253,
+              0.9999999995839706,
+              1.0
+            ]
+          }
+        },
+        "report_assets": {
+          "problem_summary": "NP energy detector for AWGN SISO sensing with N=256 and Pfa<=0.01.",
+          "solution_summary": "Closed-form NP threshold/theory plus vectorized Monte Carlo validation, CFAR and CFD baselines, ROC/AUC, and robustness checks.",
+          "evaluation_summary": {
+            "primary_metric": "P_d_at_P_fa_0.01",
+            "pfa_constraint_target": 0.01,
+            "max_abs_theory_empirical_pd_gap": 0.0010993164158098478,
+            "pd_at_minus10db_theory": 0.22571786662607385,
+            "pd_at_minus10db_empirical_np": 0.22555
+          },
+          "tables": [
+            {
+              "method": "Proposed (Closed-form NP theory)",
+              "pd_-10dB": 0.22571786662607385
+            },
+            {
+              "method": "NP analytic threshold (MC)",
+              "pd_-10dB": 0.22555,
+              "pfa_mean": 0.010086363636363636
+            },
+            {
+              "method": "MC-CFAR threshold (MC)",
+              "pd_-10dB": 0.22505,
+              "pfa_mean": 0.009892727272727274
+            },
+            {
+              "method": "NP-optimal benchmark",
+              "pd_-10dB": 0.22571786662607385
+            },
+            {
+              "method": "Cyclostationary baseline",
+              "pd_-10dB": 0.029666666666666668,
+              "pfa_mean": 0.011212121212121211
+            }
+          ],
+          "figures": [
+            {
+              "title": "P D At P Fa 0.01",
+              "xlabel": "SNR (dB)",
+              "ylabel": "P d at P fa 0.01",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "proposed": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "np_analytic": [
+                  0.01603,
+                  0.02061,
+                  0.02759,
+                  0.04753,
+                  0.09553,
+                  0.22555,
+                  0.53127,
+                  0.90263,
+                  0.99865,
+                  1.0,
+                  1.0
+                ],
+                "cfar_mc": [
+                  0.01487,
+                  0.02011,
+                  0.02771,
+                  0.04866,
+                  0.09436,
+                  0.22505,
+                  0.53145,
+                  0.90086,
+                  0.99847,
+                  1.0,
+                  1.0
+                ],
+                "np_optimal": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "cyclostationary": [
+                  0.011666666666666667,
+                  0.008,
+                  0.013333333333333334,
+                  0.02266666666666667,
+                  0.022333333333333334,
+                  0.029666666666666668,
+                  0.063,
+                  0.10866666666666666,
+                  0.23866666666666667,
+                  0.5,
+                  0.7946666666666666
+                ]
+              }
+            },
+            {
+              "title": "Metric Curve",
+              "xlabel": "SNR (dB)",
+              "ylabel": "metric curve",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "proposed": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "np_analytic": [
+                  0.01603,
+                  0.02061,
+                  0.02759,
+                  0.04753,
+                  0.09553,
+                  0.22555,
+                  0.53127,
+                  0.90263,
+                  0.99865,
+                  1.0,
+                  1.0
+                ],
+                "cfar_mc": [
+                  0.01487,
+                  0.02011,
+                  0.02771,
+                  0.04866,
+                  0.09436,
+                  0.22505,
+                  0.53145,
+                  0.90086,
+                  0.99847,
+                  1.0,
+                  1.0
+                ],
+                "np_optimal": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "cyclostationary": [
+                  0.011666666666666667,
+                  0.008,
+                  0.013333333333333334,
+                  0.02266666666666667,
+                  0.022333333333333334,
+                  0.029666666666666668,
+                  0.063,
+                  0.10866666666666666,
+                  0.23866666666666667,
+                  0.5,
+                  0.7946666666666666
+                ]
+              }
+            },
+            {
+              "title": "Pfa Curve",
+              "xlabel": "SNR (dB)",
+              "ylabel": "pfa curve",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "np_analytic": [
+                  0.01026,
+                  0.01007,
+                  0.01003,
+                  0.00991,
+                  0.0097,
+                  0.01058,
+                  0.01044,
+                  0.01,
+                  0.01041,
+                  0.00991,
+                  0.00964
+                ],
+                "cfar_mc": [
+                  0.00933,
+                  0.00944,
+                  0.00976,
+                  0.01081,
+                  0.01006,
+                  0.01034,
+                  0.01003,
+                  0.00942,
+                  0.01002,
+                  0.01044,
+                  0.00917
+                ],
+                "cyclostationary": [
+                  0.007333333333333333,
+                  0.008666666666666666,
+                  0.015333333333333332,
+                  0.011333333333333334,
+                  0.011,
+                  0.012,
+                  0.012666666666666666,
+                  0.009666666666666667,
+                  0.011,
+                  0.015,
+                  0.009333333333333334
+                ]
+              }
+            },
+            {
+              "title": "Theory Empirical Gap",
+              "xlabel": "SNR (dB)",
+              "ylabel": "theory empirical gap",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "np_gap_abs": [
+                  0.0006322732215500275,
+                  0.0010660189916106115,
+                  0.0003533847356594934,
+                  0.00063877965466623,
+                  0.0005199127104029699,
+                  0.00016786662607384817,
+                  0.0010993164158098478,
+                  0.00036571830182541287,
+                  3.815507463644785e-05,
+                  7.696688664182716e-08,
+                  3.3306690738754696e-16
+                ]
+              }
+            },
+            {
+              "title": "Noise Uncertainty Sensitivity",
+              "xlabel": "Noise power mismatch (dB)",
+              "ylabel": "noise uncertainty sensitivity",
+              "x": [
+                -1.0,
+                0.0,
+                1.0
+              ],
+              "series": {
+                "pd_np_analytic": [
+                  0.0,
+                  0.22731,
+                  0.99775
+                ],
+                "pfa_np_analytic": [
+                  0.0,
+                  0.01026,
+                  0.91709
+                ]
+              }
+            },
+            {
+              "title": "Snapshot Sensitivity",
+              "xlabel": "Number of samples N",
+              "ylabel": "snapshot sensitivity",
+              "x": [
+                64,
+                128,
+                256,
+                512
+              ],
+              "series": {
+                "proposed": [
+                  0.0663402710382851,
+                  0.11649396988680105,
+                  0.22571786662607385,
+                  0.44779204172005627
+                ],
+                "np_analytic": [
+                  0.06664,
+                  0.11668,
+                  0.22642,
+                  0.44761
+                ],
+                "cfar_mc": [
+                  0.06619,
+                  0.11518,
+                  0.2244,
+                  0.45249
+                ],
+                "cyclostationary": [
+                  0.03166666666666667,
+                  0.015666666666666666,
+                  0.036,
+                  0.029
+                ]
+              }
+            }
+          ],
+          "figures_metadata": [
+            {
+              "title": "P D At P Fa 0.01",
+              "xlabel": "SNR (dB)",
+              "ylabel": "P d at P fa 0.01",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "proposed": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "np_analytic": [
+                  0.01603,
+                  0.02061,
+                  0.02759,
+                  0.04753,
+                  0.09553,
+                  0.22555,
+                  0.53127,
+                  0.90263,
+                  0.99865,
+                  1.0,
+                  1.0
+                ],
+                "cfar_mc": [
+                  0.01487,
+                  0.02011,
+                  0.02771,
+                  0.04866,
+                  0.09436,
+                  0.22505,
+                  0.53145,
+                  0.90086,
+                  0.99847,
+                  1.0,
+                  1.0
+                ],
+                "np_optimal": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "cyclostationary": [
+                  0.011666666666666667,
+                  0.008,
+                  0.013333333333333334,
+                  0.02266666666666667,
+                  0.022333333333333334,
+                  0.029666666666666668,
+                  0.063,
+                  0.10866666666666666,
+                  0.23866666666666667,
+                  0.5,
+                  0.7946666666666666
+                ]
+              }
+            },
+            {
+              "title": "Metric Curve",
+              "xlabel": "SNR (dB)",
+              "ylabel": "metric curve",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "proposed": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "np_analytic": [
+                  0.01603,
+                  0.02061,
+                  0.02759,
+                  0.04753,
+                  0.09553,
+                  0.22555,
+                  0.53127,
+                  0.90263,
+                  0.99865,
+                  1.0,
+                  1.0
+                ],
+                "cfar_mc": [
+                  0.01487,
+                  0.02011,
+                  0.02771,
+                  0.04866,
+                  0.09436,
+                  0.22505,
+                  0.53145,
+                  0.90086,
+                  0.99847,
+                  1.0,
+                  1.0
+                ],
+                "np_optimal": [
+                  0.015397726778449972,
+                  0.01954398100838939,
+                  0.027943384735659493,
+                  0.04689122034533377,
+                  0.09501008728959703,
+                  0.22571786662607385,
+                  0.5323693164158099,
+                  0.9022642816981746,
+                  0.9986118449253636,
+                  0.9999999230331134,
+                  0.9999999999999997
+                ],
+                "cyclostationary": [
+                  0.011666666666666667,
+                  0.008,
+                  0.013333333333333334,
+                  0.02266666666666667,
+                  0.022333333333333334,
+                  0.029666666666666668,
+                  0.063,
+                  0.10866666666666666,
+                  0.23866666666666667,
+                  0.5,
+                  0.7946666666666666
+                ]
+              }
+            },
+            {
+              "title": "Pfa Curve",
+              "xlabel": "SNR (dB)",
+              "ylabel": "pfa curve",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "np_analytic": [
+                  0.01026,
+                  0.01007,
+                  0.01003,
+                  0.00991,
+                  0.0097,
+                  0.01058,
+                  0.01044,
+                  0.01,
+                  0.01041,
+                  0.00991,
+                  0.00964
+                ],
+                "cfar_mc": [
+                  0.00933,
+                  0.00944,
+                  0.00976,
+                  0.01081,
+                  0.01006,
+                  0.01034,
+                  0.01003,
+                  0.00942,
+                  0.01002,
+                  0.01044,
+                  0.00917
+                ],
+                "cyclostationary": [
+                  0.007333333333333333,
+                  0.008666666666666666,
+                  0.015333333333333332,
+                  0.011333333333333334,
+                  0.011,
+                  0.012,
+                  0.012666666666666666,
+                  0.009666666666666667,
+                  0.011,
+                  0.015,
+                  0.009333333333333334
+                ]
+              }
+            },
+            {
+              "title": "Theory Empirical Gap",
+              "xlabel": "SNR (dB)",
+              "ylabel": "theory empirical gap",
+              "x": [
+                -20.0,
+                -18.0,
+                -16.0,
+                -14.0,
+                -12.0,
+                -10.0,
+                -8.0,
+                -6.0,
+                -4.0,
+                -2.0,
+                0.0
+              ],
+              "series": {
+                "np_gap_abs": [
+                  0.0006322732215500275,
+                  0.0010660189916106115,
+                  0.0003533847356594934,
+                  0.00063877965466623,
+                  0.0005199127104029699,
+                  0.00016786662607384817,
+                  0.0010993164158098478,
+                  0.00036571830182541287,
+                  3.815507463644785e-05,
+                  7.696688664182716e-08,
+                  3.3306690738754696e-16
+                ]
+              }
+            },
+            {
+              "title": "Noise Uncertainty Sensitivity",
+              "xlabel": "Noise power mismatch (dB)",
+              "ylabel": "noise uncertainty sensitivity",
+              "x": [
+                -1.0,
+                0.0,
+                1.0
+              ],
+              "series": {
+                "pd_np_analytic": [
+                  0.0,
+                  0.22731,
+                  0.99775
+                ],
+                "pfa_np_analytic": [
+                  0.0,
+                  0.01026,
+                  0.91709
+                ]
+              }
+            },
+            {
+              "title": "Snapshot Sensitivity",
+              "xlabel": "Number of samples N",
+              "ylabel": "snapshot sensitivity",
+              "x": [
+                64,
+                128,
+                256,
+                512
+              ],
+              "series": {
+                "proposed": [
+                  0.0663402710382851,
+                  0.11649396988680105,
+                  0.22571786662607385,
+                  0.44779204172005627
+                ],
+                "np_analytic": [
+                  0.06664,
+                  0.11668,
+                  0.22642,
+                  0.44761
+                ],
+                "cfar_mc": [
+                  0.06619,
+                  0.11518,
+                  0.2244,
+                  0.45249
+                ],
+                "cyclostationary": [
+                  0.03166666666666667,
+                  0.015666666666666666,
+                  0.036,
+                  0.029
+                ]
+              }
+            }
+          ]
+        },
+        "notes": {
+          "primary_metric": "P_d_at_P_fa_0.01"
+        }
+      }
+    }
+  },
+  {
+    "stage": "S8",
+    "title": "Report generation",
+    "summary_lines": [
+      "Report lines: 441",
+      "Report preview: Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking....",
+      "Review score: 9.2"
+    ],
+    "payload": {
+      "report_preview": [
+        "Thinking... (1s elapsed)Thinking... (2s elapsed)Thinking... (3s elapsed)Thinking... (4s elapsed)Thinking... (5s elapsed)Thinking... (6s elapsed)Thinking... (7s elapsed)Thinking... (8s elapsed)Thinking... (9s elapsed)Thinking... (10s elapsed)Thinking... (11s elapsed)Thinking... (12s elapsed)Thinking... (13s elapsed)Thinking... (14s elapsed)Thinking... (15s elapsed)Thinking... (16s elapsed)Thinking... (17s elapsed)Thinking... (18s elapsed)# 1. Abstract",
+        "",
+        "This study addresses fixed-sample binary spectrum sensing for a single-user, single-antenna receiver using $N=256$ complex baseband samples per sensing interval under additive white Gaussian noise (AWGN), with Neyman–Pearson (NP) false-alarm control at $P_{fa}\\le 0.01$. The proposed approach is a closed-form NP energy detector (radiometer) that exploits the sufficient statistic $U=\\frac{1}{\\sigma_w^2}\\sum_{n=1}^{N}|y[n]|^2$, where threshold selection is performed analytically via chi-square quantile inversion rather than empirical tuning, enabling direct theoretical prediction of $P_d$ over SNR from $-20$ dB to $0$ dB. The theoretical curve is validated through vectorized Monte Carlo simulation with $10^5$ trials per SNR (seed 2026), and compared against NP-analytic Monte Carlo realization, Monte Carlo-calibrated CFAR energy thresholding, NP-optimal benchmark equivalence, and an optional cyclostationary baseline for robustness/complexity context. The main quantitative finding is that theory and simulation agree very closely: the maximum absolute theory–empirical detection gap is $0.0010993$, well below the target bound of $0.02$, while empirical $P_{fa}$ remains centered near the design target (mean $0.01009$ for NP analytic threshold). At the mandatory reporting point of $-10$ dB, detection performance is $P_d^{\\text{th}}=0.2257179$ and $P_d^{\\text{emp}}=0.22555$, confirming correct implementation and statistical consistency. Additional ROC analysis shows expected monotonic separability with AUC improving from $0.6714$ at $-14$ dB to $0.9919$ at $-6$ dB. Robustness stress tests under $\\pm 1$ dB noise-power mismatch expose the known energy-detector sensitivity and SNR-wall behavior, highlighting practical calibration requirements.",
+        "",
+        "---",
+        "",
+        "# 2. System Model and Mathematical Formulation",
+        "",
+        "The sensing scenario is a single-receiver, single-transmitter equivalent occupancy test in which the secondary user observes one complex baseband stream per interval and must decide whether the licensed band is idle or occupied. The propagation and front-end impairments are assumed compensated to the extent that the residual observation model is memoryless AWGN over each interval. Because the detector is intentionally non-coherent and waveform-agnostic, no pilot, symbol, or cyclostationary structure is used in the primary decision variable; only sample energy is exploited.",
+        "",
+        "For each interval, the receiver acquires $N=256$ i.i.d. complex samples. Under $\\mathcal{H}_0$, only noise is present; under $\\mathcal{H}_1$, a random Gaussian signal with SNR $\\gamma$ is added to noise. This Gaussian-signal modeling is standard for deriving closed-form energy-detector distributions and creates a tractable benchmark against which Monte Carlo outputs can be compared without ambiguity from modulation-dependent effects.",
+        "",
+        "**Signal and hypothesis model**  ",
+        "$$",
+        "\\mathcal{H}_0: y[n]=w[n],\\quad w[n]\\sim\\mathcal{CN}(0,\\sigma_w^2)",
+        "$$",
+        "$$",
+        "\\mathcal{H}_1: y[n]=s[n]+w[n],\\quad s[n]\\sim\\mathcal{CN}(0,\\gamma\\sigma_w^2),\\; w[n]\\sim\\mathcal{CN}(0,\\sigma_w^2)",
+        "$$",
+        "These equations define the binary occupancy hypotheses. Here, $y[n]$ is the observed sample, $w[n]$ is circular complex Gaussian noise with variance $\\sigma_w^2$, $s[n]$ is the primary-user contribution, and $\\gamma$ is linear SNR. The Gaussian signal model ensures the total variance under $\\mathcal{H}_1$ scales as $(1+\\gamma)\\sigma_w^2$."
+      ]
+    }
+  }
+]

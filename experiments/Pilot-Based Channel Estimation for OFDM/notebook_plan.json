@@ -1,0 +1,110 @@
+[
+  {
+    "role": "title",
+    "cell_type": "markdown",
+    "purpose": "State task, methods, and expected outputs.",
+    "must_include": [
+      "Problem statement (64-tone OFDM, 16 comb pilots, recover 48 non-pilot tones)",
+      "Compared estimators",
+      "NMSE vs SNR objective and confidence bands"
+    ]
+  },
+  {
+    "role": "problem_setup",
+    "cell_type": "markdown",
+    "purpose": "Define system parameters and assumptions.",
+    "must_include": [
+      "N=64, CP=16, pilot spacing=4",
+      "SNR sweep 0:2:30 and 500 trials/SNR",
+      "TDL-A, RMS delay spread reference 30 ns"
+    ]
+  },
+  {
+    "role": "modeling_summary",
+    "cell_type": "markdown",
+    "purpose": "Present core equations used in implementation.",
+    "must_include": [
+      "$\\mathbf{y}_p=\\mathbf{X}_p\\mathbf{h}_p+\\mathbf{n}_p$",
+      "$\\hat{\\mathbf{h}}_p^{LS}=\\mathbf{X}_p^{-1}\\mathbf{y}_p$",
+      "DFT truncation equations",
+      "LMMSE Wiener equation with covariance"
+    ]
+  },
+  {
+    "role": "imports_setup",
+    "cell_type": "code",
+    "purpose": "Load required libraries and set reproducibility.",
+    "must_include": [
+      "import numpy as np",
+      "import matplotlib.pyplot as plt",
+      "from time import perf_counter",
+      "np.random.seed(...)"
+    ]
+  },
+  {
+    "role": "data_generation",
+    "cell_type": "code",
+    "purpose": "Implement TDL-A tap generation, CFR construction, and noisy pilot observation simulator.",
+    "must_include": [
+      "pilot/data index builders",
+      "PDP normalization",
+      "channel generation function",
+      "noise variance from SNR function"
+    ]
+  },
+  {
+    "role": "algorithm_core",
+    "cell_type": "code",
+    "purpose": "Implement all estimators in notebook functions.",
+    "must_include": [
+      "ls_linear_estimator(...)",
+      "ls_spline_estimator(...)",
+      "dft_truncated_estimator(...)",
+      "lmmse_wiener_estimator(...) with 16x16 solve",
+      "nmse_nonpilot(...)"
+    ]
+  },
+  {
+    "role": "evaluation_logic",
+    "cell_type": "code",
+    "purpose": "Create sweep function looping over every SNR point and optionally sensitivity factors; compute metrics independently per point and per method.",
+    "must_include": [
+      "for snr_db in snr_db_grid:",
+      "inner Monte-Carlo loop over trials",
+      "evaluate all methods in same loop",
+      "collect mean/std/CI and runtime",
+      "support optional factor argument (L_t, pilot count, delay spread)"
+    ]
+  },
+  {
+    "role": "execution",
+    "cell_type": "code",
+    "purpose": "Run default experiment and sensitivity experiments.",
+    "must_include": [
+      "execute primary SNR sweep",
+      "execute at least one sensitivity sweep",
+      "store outputs in required_result_keys-like dicts"
+    ]
+  },
+  {
+    "role": "plotting",
+    "cell_type": "code",
+    "purpose": "Generate required visual evidence.",
+    "must_include": [
+      "NMSE vs SNR with CI bands",
+      "Sensitivity comparison plot",
+      "Delay-domain intermediate visualization",
+      "runtime/complexity comparison chart"
+    ]
+  },
+  {
+    "role": "result_notes",
+    "cell_type": "markdown",
+    "purpose": "Summarize findings and trade-offs.",
+    "must_include": [
+      "Which method wins NMSE and where",
+      "Complexity/runtime interpretation",
+      "Observed sensitivity to L_t and pilot density"
+    ]
+  }
+]

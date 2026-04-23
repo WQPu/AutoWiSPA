@@ -14,11 +14,11 @@ __pycache__/
 # !.env.example
 
 # Experiments and generated outputs
-experiments/*
-!experiments/EXPERIMENTS.md
-llm_logs/
-events/
-iterations/
+# experiments/*
+# !experiments/EXPERIMENTS.md
+# llm_logs/
+# events/
+# iterations/
 
 # Jupyter checkpoints
 .ipynb_checkpoints/

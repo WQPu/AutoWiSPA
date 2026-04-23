@@ -1,0 +1,109 @@
+{
+  "problem_understanding": {
+    "task_category": "estimation|recovery|interpolation",
+    "problem_statement": "Given noisy comb-pilot OFDM observations on 16 uniformly spaced pilot tones out of 64 subcarriers in a SISO link, estimate the full 64-tone CFR per OFDM symbol, with explicit recovery quality on the 48 non-pilot tones. Pilot-domain model is Y_p = X_p H_p + N_p, followed by full-band reconstruction using interpolation and/or model-based denoising. The study must include at least two estimators with distinct complexity-performance trade-offs and report NMSE vs SNR from 0 to 30 dB.",
+    "exploitable_structure": "CFR is highly correlated across frequency because RMS delay spread (30 ns) is small relative to inverse subcarrier spacing and total occupied bandwidth (0.96 MHz). The channel is sparse/low-dimensional in delay domain under finite CP and TDL PDP, enabling DFT-domain denoising/truncation. Uniform pilot spacing of 4 subcarriers supports structured interpolation and covariance-driven Wiener reconstruction."
+  },
+  "system_model": {
+    "waveform": "OFDM",
+    "antenna_config": {
+      "num_tx": 1,
+      "num_rx": 1,
+      "array_type": "single_antenna",
+      "additional_elements": {}
+    },
+    "channel_model": "3GPP_TDL-A",
+    "operating_conditions": {
+      "carrier_freq_ghz": 3.5,
+      "bandwidth_mhz": 0.96,
+      "mobility_kmh": 3
+    },
+    "additional_params": {
+      "num_subcarriers": 64,
+      "subcarrier_spacing_khz": 15,
+      "cp_length_samples": 16,
+      "num_pilot_subcarriers": 16,
+      "num_data_subcarriers": 48,
+      "pilot_pattern": "uniform_comb_every_4_subcarriers",
+      "rms_delay_spread_ns": 30,
+      "snr_sweep_db": {
+        "start": 0,
+        "stop": 30,
+        "step": 2
+      },
+      "required_estimation_approaches": [
+        {
+          "name": "LS_plus_piecewise_linear_or_spline_interpolation",
+          "tradeoff": "lowest_complexity_reference"
+        },
+        {
+          "name": "DFT_based_delay_domain_truncation_after_LS_interpolation",
+          "tradeoff": "moderate_complexity_improved_noise_rejection"
+        },
+        {
+          "name": "LMMSE_Wiener_frequency_interpolation_using_TDL_covariance",
+          "tradeoff": "higher_complexity_best_expected_nmse"
+        }
+      ],
+      "required_outputs": [
+        "NMSE_vs_SNR_curves_for_each_approach",
+        "95pct_confidence_intervals_or_std_bands_over_trials",
+        "interpolation_or_reconstruction_strategy_for_non_pilot_subcarriers",
+        "complexity_and_runtime_comparison_per_OFDM_symbol"
+      ],
+      "pilot_symbol_model": "known_unit_modulus",
+      "virtual_carriers_present": false,
+      "monte_carlo_trials_per_snr": 500
+    },
+    "channel_properties": [
+      "frequency_selective",
+      "multipath_fading",
+      "WSSUS_approx",
+      "pilot-correlated_in_frequency",
+      "delay_domain_compressible",
+      "quasi_static_within_OFDM_symbol"
+    ],
+    "carrier_freq_ghz": 3.5,
+    "bandwidth_mhz": 0.96,
+    "mobility_kmh": 3
+  },
+  "performance_targets": {
+    "primary_metric": "NMSE_dB",
+    "secondary_metrics": [
+      "complexity_flops",
+      "runtime_per_OFDM_symbol_ms",
+      "nmse_gain_over_ls_linear_dB"
+    ],
+    "theoretical_bound": "LMMSE_lower_bound_given_second_order_statistics",
+    "baseline_algorithms": [
+      "LS_linear_interpolation",
+      "LS_spline_interpolation",
+      "DFT_truncated_LS",
+      "LMMSE_Wiener_frequency_interpolation"
+    ],
+    "target_value": null
+  },
+  "constraints": {
+    "complexity": "Include at least one interpolation-only low-complexity method with no large matrix inversion, and at least one covariance/model-aided method; any explicit inversion must be dimension <= 16x16 (pilot-domain).",
+    "data_availability": "synthetic_only",
+    "implementation": "classical_numpy_fft_linear_algebra"
+  },
+  "design_preferences": {
+    "approach": "classical_signal_processing",
+    "interpretability": "high",
+    "online_adaptation": false
+  },
+  "assumptions_made": [
+    "Per-symbol channel estimation assumes block fading over one OFDM symbol; mobility fixed at 3 km/h as low-speed default.",
+    "Pilot symbols are perfectly known, power-normalized, and synchronization impairments (timing/CFO/phase noise) are pre-compensated.",
+    "All 64 subcarriers are active (no guard/DC null) unless explicitly changed later; hence pilot/data partition is 16/48.",
+    "SNR sweep uses 2 dB resolution for stable curve generation with manageable runtime.",
+    "NMSE is averaged over independent Monte Carlo channel/noise realizations generated from synthetic 3GPP TDL-A.",
+    "For LMMSE, second-order statistics are available via PDP-derived covariance (or accurately pre-estimated offline).",
+    "For DFT-based estimator, effective channel length used for tap truncation is inferred from PDP/CP and treated as a tunable hyperparameter.",
+    "Runtime and FLOP comparisons are performed under identical simulation settings and implementation language."
+  ],
+  "task_category": "estimation|recovery|interpolation",
+  "task_description": "Estimate full-band OFDM CFR from noisy comb pilots in a 64-subcarrier SISO system with 16 pilot tones (spacing 4). Compare at least two estimators with clear complexity-performance separation, now refined to include (i) LS + interpolation baseline, (ii) DFT delay-domain denoising/truncation variant, and (iii) covariance-aided LMMSE Wiener interpolation. Evaluate NMSE_dB vs SNR (0:2:30 dB) with Monte Carlo averaging and confidence bands, and report runtime/complexity trade-offs.",
+  "exploitable_structure": "Small delay spread relative to system bandwidth yields smooth CFR and strong pilot-to-data frequency correlation; finite-delay channel support and CP allow DFT-domain truncation denoising; uniform comb pilots enable both simple interpolation and structured Wiener reconstruction with pilot-domain covariance."
+}
