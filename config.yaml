@@ -1,0 +1,59 @@
+# AutoWiSPA Global Configuration
+
+# ===== LLM Configuration =====
+llm:
+  primary_model: "gpt-5.3-codex"            # Primary LLM (reasoning & code generation)
+  fallback_models:                   # Fallback model chain tried sequentially if primary fails
+    - "gpt-4o"
+  temperature: 0.1                   # Low temperature for code generation
+  architect_temperature: 0.2         # Slightly higher temperature for solution design (S4)
+  max_tokens: 20000                  # Global default completion cap when a node-specific value is absent
+  retry_attempts: 3                  # Retries per model before falling back to the next model
+  retry_delay_sec: 2.0               # Base delay for exponential backoff
+  request_timeout_sec: 360           # Hard timeout for a single LLM request
+  silence_timeout_sec: 45            # Retry if the streaming response stays silent for too long
+  node_max_tokens:
+    # ── Pipeline S1–S9 ──────────────────────────────────────
+    problem_analysis: 20000            # S1: Task spec parsing (JSON output)
+    problem_analysis_refine: 20000     # S1: Spec refinement with retrieved knowledge
+    knowledge_keyword_extraction: 10000 # S2: Short keyword list only
+    knowledge_retrieval: 20000         # S2: Design insights synthesis
+    model_formulation: 20000           # S3: Math formalization (JSON output)
+    solution_planning: 20000          # S4: Full solution plan with notebook spec
+    notebook_generation: 20000        # S5: Full notebook code generation
+    notebook_repair: 20000            # S5: Notebook repair after verification/simulation failure
+    report_generation: 20000          # S8: Full research report in Markdown
+    result_review: 10000               # S9: Structured review JSON
+
+# ===== Agent Configuration =====
+agents:
+  max_simulation_retries: 5          # Max repair-and-retry cycles after simulation failure
+
+# ===== Knowledge Base =====
+knowledge_base:
+  online_search_enabled: true
+  online_sources:                    # Enabled online data sources
+    - ieee
+    - arxiv
+    - semantic_scholar
+    - crossref
+  top_k_papers: 5                   # Max papers returned by online retrieval
+  top_k_algorithms: 3               # Max algorithm suggestions
+  top_k_templates: 3                # Max notebook template suggestions
+
+# ===== Simulation Engine =====
+simulation:
+  sandbox_type: "subprocess"         # subprocess | docker
+  sandbox_timeout: 600               # Sandbox execution timeout (seconds)
+  quick_eval_samples: 500            # Monte Carlo samples when evaluation_plan omits num_monte_carlo
+
+# ===== Output =====
+output:
+  experiments_dir: "./experiments"   # Root directory for all run outputs
+
+# ===== Web Dashboard =====
+web:
+  port: 7860
+  share: false                       # Whether to generate a Gradio public link
+  hitl_timeout: 10                   # HITL wait timeout (seconds), auto-approve on timeout
+  auto_open_browser: true            # Automatically open the local dashboard page after launch

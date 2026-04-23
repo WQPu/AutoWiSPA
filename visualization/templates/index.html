@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AUTO•WISPA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js"></script>
+  </head>
+  <body>
+    <div class="backdrop-grid"></div>
+
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand">AUTO•WISPA</div>
+        <div class="brand-subtitle">Autonomous Wireless Signal Processing Agent</div>
+      </div>
+
+      <div class="header-side">
+        <div class="status-cluster">
+          <span class="top-tag">STAGE MONITOR</span>
+          <span id="run-name" class="top-tag">AUTO-FOLLOW</span>
+          <span id="active-stage-tag" class="top-tag">WAITING</span>
+          <span id="live-tag" class="top-tag idle">IDLE</span>
+          <span id="updated-tag" class="top-tag">N/A</span>
+        </div>
+
+        <div class="selector-cluster panel chrome-panel">
+          <label class="selector-field">
+            <span class="selector-label">Task</span>
+            <select id="run-selector" class="run-selector">
+              <option value="">AUTO-FOLLOW LATEST TASK</option>
+            </select>
+          </label>
+
+          <div class="path-stack">
+            <div class="selector-field compact-path">
+              <span class="selector-label">Data Folder</span>
+              <div class="root-picker-row">
+                <select id="root-selector" class="run-selector">
+                  <option value="experiments">AutoWiSPA/experiments</option>
+                </select>
+                <button id="root-picker-button" type="button" class="root-picker-button">Browse</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-shell">
+      <section class="mission-panel panel">
+        <div class="panel-heading">
+          <span class="eyebrow">Mission Input</span>
+          <div id="mission-chips" class="chip-row"></div>
+        </div>
+        <div id="mission-query" class="mission-query"></div>
+      </section>
+
+      <section class="hero-grid">
+        <article class="panel section-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Workflow</span>
+            <span id="pipeline-meta" class="panel-meta">0 Steps</span>
+          </div>
+          <div id="pipeline-list" class="pipeline-list" data-scroll-key="pipeline-list"></div>
+        </article>
+
+        <article class="panel section-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Execution Log</span>
+            <span id="execution-meta" class="panel-meta">All Events (0)</span>
+          </div>
+          <div id="execution-feed" class="feed-list" data-scroll-key="execution-feed"></div>
+        </article>
+
+        <article class="panel section-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Active Step</span>
+            <span id="focus-status" class="status-badge pending">Pending</span>
+          </div>
+          <div id="focus-stage" class="section-title"></div>
+          <div id="focus-headline" class="focus-headline"></div>
+          <div id="focus-meta" class="chip-row compact"></div>
+          <div id="focus-summary" class="focus-summary" data-scroll-key="focus-summary"></div>
+          <div id="focus-error" class="error-message" hidden></div>
+          <div id="focus-body" class="focus-body" data-scroll-key="focus-body"></div>
+          <div id="focus-actions" class="panel-actions"></div>
+        </article>
+
+        <article class="panel section-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Runtime State</span>
+            <span class="panel-meta">Auto Follow</span>
+          </div>
+          <div id="overview-cards" class="overview-grid"></div>
+          <div id="runtime-lines" class="runtime-lines"></div>
+        </article>
+      </section>
+
+      <section class="panel llm-panel">
+        <div class="panel-heading">
+          <span class="eyebrow">LLM Feed</span>
+          <span id="llm-model-tag" class="panel-meta">idle</span>
+        </div>
+        <div id="llm-feed" class="llm-feed" data-scroll-key="llm-feed"></div>
+      </section>
+
+      <section id="stage-cards" class="stage-matrix"></section>
+
+      <section class="bottom-grid">
+        <article class="panel report-panel">
+          <div class="panel-heading">
+            <span id="report-headline" class="eyebrow">Final Report / Live Draft</span>
+            <span class="panel-meta">Auto Preview</span>
+          </div>
+          <div id="report-error" class="error-message" hidden></div>
+          <div id="report-content" class="report-content" data-scroll-key="report-content"></div>
+          <div id="report-actions" class="panel-actions"></div>
+        </article>
+
+        <article class="panel performance-panel">
+          <div class="panel-heading">
+            <span class="eyebrow">Performance Snapshot</span>
+            <span class="panel-meta">Simulation</span>
+          </div>
+          <div id="performance-metrics" class="metric-stack"></div>
+          <div id="performance-error" class="error-message" hidden></div>
+          <div id="performance-summary" class="performance-summary" data-scroll-key="performance-summary"></div>
+          <div id="performance-actions" class="panel-actions"></div>
+          <div id="performance-plot" class="plot-shell"></div>
+        </article>
+      </section>
+    </main>
+
+    <div id="context-modal" class="context-modal" aria-hidden="true">
+      <div class="context-modal-backdrop" data-context-close></div>
+      <section class="context-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="context-modal-title">
+        <header class="context-modal-header">
+          <div class="context-modal-heading">
+            <div id="context-modal-title" class="context-modal-title">Full Context</div>
+            <div id="context-modal-source" class="context-modal-source"></div>
+          </div>
+          <button id="context-modal-close" class="context-close-button" type="button" data-context-close>Close</button>
+        </header>
+        <div id="context-modal-error" class="error-message" hidden></div>
+        <div id="context-modal-content" class="context-modal-content"></div>
+      </section>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+  </body>
+</html>
